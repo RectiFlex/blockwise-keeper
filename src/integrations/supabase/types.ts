@@ -308,7 +308,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      expense_categories: {
+        Row: {
+          amount: number | null
+          category: string | null
+        }
+        Relationships: []
+      }
+      maintenance_statistics: {
+        Row: {
+          pending_requests: number | null
+          requests_last_month: number | null
+          total_requests: number | null
+        }
+        Relationships: []
+      }
+      monthly_maintenance_trends: {
+        Row: {
+          month: string | null
+          request_count: number | null
+        }
+        Relationships: []
+      }
+      property_distribution: {
+        Row: {
+          count: number | null
+          property_type: string | null
+        }
+        Relationships: []
+      }
+      property_statistics: {
+        Row: {
+          new_properties_last_month: number | null
+          total_properties: number | null
+        }
+        Relationships: []
+      }
+      warranty_statistics: {
+        Row: {
+          active_warranties: number | null
+          expired_warranties: number | null
+          total_warranties: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
