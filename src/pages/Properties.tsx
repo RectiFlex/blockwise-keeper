@@ -35,12 +35,14 @@ const propertyFormSchema = z.object({
   smart_contract_address: z.string().optional(),
 });
 
+type PropertyFormValues = z.infer<typeof propertyFormSchema>;
+
 export default function Properties() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const form = useForm<z.infer<typeof propertyFormSchema>>({
+  const form = useForm<PropertyFormValues>({
     resolver: zodResolver(propertyFormSchema),
     defaultValues: {
       title: "",
@@ -63,18 +65,18 @@ export default function Properties() {
   });
 
   const addPropertyMutation = useMutation({
-    mutationFn: async (values: z.infer<typeof propertyFormSchema>) => {
+    mutationFn: async (values: PropertyFormValues) => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error("User not authenticated");
 
       const { data, error } = await supabase
         .from('properties')
-        .insert([
-          {
-            ...values,
-            owner_id: user.id,
-          },
-        ])
+        .insert({
+          title: values.title,
+          address: values.address,
+          owner_id: user.id,
+          smart_contract_address: values.smart_contract_address || null,
+        })
         .select()
         .single();
 
@@ -99,7 +101,7 @@ export default function Properties() {
     },
   });
 
-  async function onSubmit(values: z.infer<typeof propertyFormSchema>) {
+  async function onSubmit(values: PropertyFormValues) {
     addPropertyMutation.mutate(values);
   }
 
