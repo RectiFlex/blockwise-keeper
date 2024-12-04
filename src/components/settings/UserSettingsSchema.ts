@@ -13,6 +13,7 @@ export const userSettingsSchema = z.object({
   }).default({
     darkMode: false,
   }),
+  demo_mode: z.boolean().default(false),
 });
 
 export type UserSettingsFormValues = z.infer<typeof userSettingsSchema>;
@@ -27,6 +28,7 @@ export const parseUserSettings = (settings: any) => {
     theme_preferences: {
       darkMode: false,
     },
+    demo_mode: false,
   };
 
   if (!settings) return defaultSettings;
@@ -40,6 +42,7 @@ export const parseUserSettings = (settings: any) => {
       theme_preferences: {
         darkMode: settings.theme_preferences?.darkMode ?? defaultSettings.theme_preferences.darkMode,
       },
+      demo_mode: settings.demo_mode ?? defaultSettings.demo_mode,
     };
   } catch (error) {
     return defaultSettings;

@@ -9,6 +9,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { NotificationSettings } from "./NotificationSettings";
 import { ThemeSettings } from "./ThemeSettings";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { userSettingsSchema, type UserSettingsFormValues, parseUserSettings } from "./UserSettingsSchema";
 
 export default function UserSettings() {
@@ -25,6 +27,7 @@ export default function UserSettings() {
       theme_preferences: {
         darkMode: false,
       },
+      demo_mode: false,
     },
   });
 
@@ -106,6 +109,16 @@ export default function UserSettings() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <NotificationSettings form={form} />
             <ThemeSettings form={form} />
+            
+            <div className="flex items-center justify-between space-x-2">
+              <Label htmlFor="demo_mode">Demo Mode</Label>
+              <Switch
+                id="demo_mode"
+                checked={form.watch("demo_mode")}
+                onCheckedChange={(checked) => form.setValue("demo_mode", checked)}
+              />
+            </div>
+            
             <Button
               type="submit"
               disabled={mutation.isPending}

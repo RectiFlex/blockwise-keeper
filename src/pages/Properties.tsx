@@ -13,17 +13,38 @@ type Property = Database['public']['Tables']['properties']['Row'] & {
   maintenance_requests: { count: number }[];
 };
 
-type PropertyExpense = {
-  maintenance_request: {
-    property_id: string;
-    work_orders: { actual_cost: number | null }[];
-  };
-};
+type DemoProperty = Database['public']['Tables']['demo_properties']['Row'];
 
 const PropertiesList = () => {
-  const { data: properties } = useQuery({
-    queryKey: ['properties'],
+  const { data: userSettings } = useQuery({
+    queryKey: ['userSettings'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+  });
+
+  const { data: properties } = useQuery({
+    queryKey: ['properties', { demo: userSettings?.demo_mode }],
+    queryFn: async () => {
+      if (userSettings?.demo_mode) {
+        const { data, error } = await supabase
+          .from('demo_properties')
+          .select('*');
+        
+        if (error) throw error;
+        return data as DemoProperty[];
+      }
+
       const { data, error } = await supabase
         .from('properties')
         .select('*, maintenance_requests(count)');
@@ -31,12 +52,20 @@ const PropertiesList = () => {
       if (error) throw error;
       return data as Property[];
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!userSettings,
   });
 
   const { data: expenses } = useQuery({
-    queryKey: ['property_expenses'],
+    queryKey: ['property_expenses', { demo: userSettings?.demo_mode }],
     queryFn: async () => {
+      if (userSettings?.demo_mode) {
+        // Return mock expenses for demo properties
+        return properties?.reduce((acc: Record<string, number>, property) => {
+          acc[property.id] = Math.floor(Math.random() * 10000);
+          return acc;
+        }, {});
+      }
+
       const { data, error } = await supabase
         .from('maintenance_requests')
         .select(`
@@ -46,7 +75,6 @@ const PropertiesList = () => {
       
       if (error) throw error;
       
-      // Calculate total expenses per property
       const expensesByProperty = (data || []).reduce((acc: Record<string, number>, request) => {
         if (!request.property_id) return acc;
         
@@ -60,7 +88,7 @@ const PropertiesList = () => {
       
       return expensesByProperty;
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: !!properties,
   });
 
   if (!properties) return null;
@@ -71,7 +99,7 @@ const PropertiesList = () => {
         <PropertyCard
           key={property.id}
           property={property}
-          maintenanceCount={property.maintenance_requests?.[0]?.count || 0}
+          maintenanceCount={userSettings?.demo_mode ? Math.floor(Math.random() * 10) : (property as Property).maintenance_requests?.[0]?.count || 0}
           totalExpenses={expenses?.[property.id] || 0}
         />
       ))}
@@ -81,6 +109,22 @@ const PropertiesList = () => {
 
 export default function Properties() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { data: userSettings } = useQuery({
+    queryKey: ['userSettings'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No user found");
+
+      const { data, error } = await supabase
+        .from("user_settings")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+  });
 
   return (
     <ErrorBoundary>
@@ -89,13 +133,15 @@ export default function Properties() {
           <div>
             <h1 className="text-3xl font-bold">Properties</h1>
             <p className="text-muted-foreground">
-              Manage your property portfolio
+              {userSettings?.demo_mode ? "Demo Mode: Viewing sample properties" : "Manage your property portfolio"}
             </p>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Property
-          </Button>
+          {!userSettings?.demo_mode && (
+            <Button onClick={() => setIsCreateModalOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Property
+            </Button>
+          )}
         </div>
 
         <Suspense fallback={<LoadingState message="Loading properties..." />}>

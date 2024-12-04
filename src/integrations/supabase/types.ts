@@ -105,6 +105,39 @@ export type Database = {
         }
         Relationships: []
       }
+      demo_properties: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          owner_email: string | null
+          owner_name: string | null
+          owner_phone: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          owner_email?: string | null
+          owner_name?: string | null
+          owner_phone?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       function_rate_limits: {
         Row: {
           created_at: string
@@ -280,6 +313,7 @@ export type Database = {
       user_settings: {
         Row: {
           created_at: string
+          demo_mode: boolean | null
           id: string
           notification_preferences: Json | null
           theme_preferences: Json | null
@@ -288,6 +322,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          demo_mode?: boolean | null
           id?: string
           notification_preferences?: Json | null
           theme_preferences?: Json | null
@@ -296,6 +331,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          demo_mode?: boolean | null
           id?: string
           notification_preferences?: Json | null
           theme_preferences?: Json | null
