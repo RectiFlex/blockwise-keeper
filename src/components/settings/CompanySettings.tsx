@@ -16,6 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { Database } from "@/integrations/supabase/types";
+
+type CompanySettings = Database["public"]["Tables"]["company_settings"]["Insert"];
 
 const companyFormSchema = z.object({
   company_name: z.string().min(1, "Company name is required"),
@@ -55,16 +58,23 @@ export default function CompanySettings() {
 
   const mutation = useMutation({
     mutationFn: async (values: CompanyFormValues) => {
+      const payload: CompanySettings = {
+        company_name: values.company_name,
+        business_address: values.business_address || null,
+        contact_email: values.contact_email || null,
+        contact_phone: values.contact_phone || null,
+      };
+
       if (companySettings?.id) {
         const { error } = await supabase
           .from("company_settings")
-          .update(values)
+          .update(payload)
           .eq("id", companySettings.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("company_settings")
-          .insert(values);
+          .insert(payload);
         if (error) throw error;
       }
     },
