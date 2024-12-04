@@ -1,11 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Brain } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+interface WarrantyAnalysis {
+  coverage: string[];
+  suggestions: string[];
+}
+
 export default function AIWarrantyAnalysis() {
-  const { data: analysis, isLoading } = useQuery({
+  const { data: analysis, isLoading } = useQuery<WarrantyAnalysis>({
     queryKey: ['warranty-analysis'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('analyze-warranty-data', {
@@ -38,8 +43,8 @@ export default function AIWarrantyAnalysis() {
           <ScrollArea className="h-[300px]">
             <div className="space-y-4">
               {analysis?.coverage?.map((item: string, i: number) => (
-                <p key={i}>{item}</p>
-              ))}
+                <p key={i} className="text-sm">{item}</p>
+              )) || <p className="text-sm text-muted-foreground">No coverage analysis available</p>}
             </div>
           </ScrollArea>
         </CardContent>
@@ -56,8 +61,8 @@ export default function AIWarrantyAnalysis() {
           <ScrollArea className="h-[300px]">
             <div className="space-y-4">
               {analysis?.suggestions?.map((item: string, i: number) => (
-                <p key={i}>{item}</p>
-              ))}
+                <p key={i} className="text-sm">{item}</p>
+              )) || <p className="text-sm text-muted-foreground">No suggestions available</p>}
             </div>
           </ScrollArea>
         </CardContent>
