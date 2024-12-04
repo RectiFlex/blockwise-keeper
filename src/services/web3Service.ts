@@ -104,33 +104,50 @@ export class Web3Service {
         throw new Error('Please switch to Polygon Amoy Testnet in MetaMask');
       }
 
-      // Create contract factory with gas settings
+      logger.info('Starting contract deployment process...');
+      
+      // Create contract factory
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
         this.signer
       );
 
-      logger.info('Deploying contract to Polygon Amoy...');
-      
-      // Get the current gas price
-      const gasPrice = await this.provider.getFeeData();
-      
-      // Deploy with explicit gas settings
-      const deployTransaction = await factory.getDeployTransaction();
-      const estimatedGas = await this.provider.estimateGas(deployTransaction);
-      
-      const contract = await factory.deploy({
-        gasLimit: estimatedGas * BigInt(120) / BigInt(100), // Add 20% buffer
-        maxFeePerGas: gasPrice.maxFeePerGas,
-        maxPriorityFeePerGas: gasPrice.maxPriorityFeePerGas,
+      // Get current network conditions
+      const feeData = await this.provider.getFeeData();
+      logger.info('Current network fees:', {
+        maxFeePerGas: feeData.maxFeePerGas?.toString(),
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas?.toString(),
+        gasPrice: feeData.gasPrice?.toString()
       });
 
-      logger.info('Waiting for deployment transaction...');
+      // Prepare deployment transaction
+      const deployTransaction = await factory.getDeployTransaction();
+      logger.info('Estimating gas for deployment...');
+      
+      // Estimate gas with a higher limit to avoid underestimation
+      const baseGasLimit = BigInt(3000000); // Set a base gas limit
+      const gasBuffer = BigInt(500000);  // Add buffer for safety
+      const totalGasLimit = baseGasLimit + gasBuffer;
+
+      logger.info('Deploying contract with parameters:', {
+        gasLimit: totalGasLimit.toString(),
+        maxFeePerGas: feeData.maxFeePerGas?.toString(),
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas?.toString()
+      });
+
+      // Deploy with explicit gas settings
+      const contract = await factory.deploy({
+        gasLimit: totalGasLimit,
+        maxFeePerGas: feeData.maxFeePerGas,
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+      });
+
+      logger.info('Deployment transaction sent, waiting for confirmation...');
       await contract.waitForDeployment();
       
       const contractAddress = await contract.getAddress();
-      logger.info('Contract deployed at:', { contractAddress });
+      logger.info('Contract deployed successfully at:', { contractAddress });
       
       // Initialize the contract with property details
       const contractInstance = new ethers.Contract(
@@ -141,15 +158,24 @@ export class Web3Service {
       
       logger.info('Initializing contract...');
       const initTx = await contractInstance.initialize(propertyId, title, address, {
-        gasLimit: BigInt(500000), // Explicit gas limit for initialization
+        gasLimit: BigInt(1000000), // Higher gas limit for initialization
+        maxFeePerGas: feeData.maxFeePerGas,
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
       });
+
+      logger.info('Waiting for initialization transaction...');
       await initTx.wait();
-      logger.info('Contract initialized on Polygon Amoy');
+      logger.info('Contract initialized successfully');
 
       return contractAddress;
     } catch (error: any) {
-      logger.error('Error deploying contract:', { error: error.message });
-      throw new Error(error.message || 'Failed to deploy property contract. Please check your wallet and try again.');
+      logger.error('Contract deployment failed:', { 
+        error: error.message,
+        code: error.code,
+        details: error.details || 'No additional details',
+        transaction: error.transaction || 'No transaction data'
+      });
+      throw new Error(`Failed to deploy property contract: ${error.message}`);
     }
   }
 }
