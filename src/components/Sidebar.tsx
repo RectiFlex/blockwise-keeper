@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
-  BarChart2,
   Building2,
   Settings,
   Wrench,
@@ -19,7 +18,6 @@ const menuItems = [
   { icon: Building2, label: "Properties", path: "/properties" },
   { icon: Wrench, label: "Maintenance", path: "/maintenance" },
   { icon: Users, label: "Contractors", path: "/contractors" },
-  { icon: BarChart2, label: "Analytics", path: "/analytics" },
   { icon: FileText, label: "Reports", path: "/reports" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
