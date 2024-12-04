@@ -1,87 +1,89 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { CreatePropertyModal } from "@/components/properties/CreatePropertyModal";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { LoadingState } from "@/components/ui/loading-state";
 
 export default function Properties() {
-  const [open, setOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { data: properties, isLoading } = useQuery({
+  const { data: properties, isLoading, error } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
-      const { data: propertiesData, error: propertiesError } = await supabase
+      const { data, error } = await supabase
         .from('properties')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*, maintenance_requests(count)');
       
-      if (propertiesError) throw propertiesError;
-
-      // Fetch maintenance counts and expenses for each property
-      const propertiesWithStats = await Promise.all(
-        propertiesData.map(async (property) => {
-          const { count: maintenanceCount } = await supabase
-            .from('maintenance_requests')
-            .select('*', { count: 'exact', head: true })
-            .eq('property_id', property.id);
-
-          const { data: workOrders } = await supabase
-            .from('work_orders')
-            .select('actual_cost')
-            .eq('maintenance_request_id', property.id);
-
-          const totalExpenses = workOrders?.reduce((sum, order) => 
-            sum + (order.actual_cost || 0), 0) || 0;
-
-          return {
-            ...property,
-            maintenanceCount: maintenanceCount || 0,
-            totalExpenses,
-          };
-        })
-      );
-
-      return propertiesWithStats;
+      if (error) throw error;
+      return data;
     },
   });
 
+  const { data: expenses } = useQuery({
+    queryKey: ['property_expenses'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('work_orders')
+        .select('property_id, actual_cost');
+      
+      if (error) throw error;
+      
+      // Calculate total expenses per property
+      const expensesByProperty = data.reduce((acc: Record<string, number>, order) => {
+        if (order.property_id && order.actual_cost) {
+          acc[order.property_id] = (acc[order.property_id] || 0) + Number(order.actual_cost);
+        }
+        return acc;
+      }, {});
+      
+      return expensesByProperty;
+    },
+  });
+
+  if (error) {
+    throw error; // This will be caught by the ErrorBoundary
+  }
+
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[200px]">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
+    return <LoadingState message="Loading properties..." />;
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Properties</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your registered properties
-          </p>
+    <ErrorBoundary>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Properties</h1>
+            <p className="text-muted-foreground">
+              Manage your property portfolio
+            </p>
+          </div>
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Property
+          </Button>
         </div>
-        <Button onClick={() => setOpen(true)} className="bg-accent hover:bg-accent/90">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Property
-        </Button>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {properties?.map((property) => (
-          <PropertyCard 
-            key={property.id} 
-            property={property}
-            maintenanceCount={property.maintenanceCount}
-            totalExpenses={property.totalExpenses}
-          />
-        ))}
-      </div>
 
-      <CreatePropertyModal open={open} onOpenChange={setOpen} />
-    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {properties?.map((property) => (
+            <PropertyCard
+              key={property.id}
+              property={property}
+              maintenanceCount={property.maintenance_requests?.[0]?.count || 0}
+              totalExpenses={expenses?.[property.id] || 0}
+            />
+          ))}
+        </div>
+
+        <CreatePropertyModal
+          open={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+        />
+      </div>
+    </ErrorBoundary>
   );
 }
