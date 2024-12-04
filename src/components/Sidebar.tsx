@@ -8,7 +8,11 @@ import {
   Users,
   FileText,
   LayoutDashboard,
+  ChevronLeft,
 } from "lucide-react";
+import { useState } from "react";
+import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -22,13 +26,37 @@ const menuItems = [
 
 export default function Sidebar() {
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="h-screen w-64 bg-black/20 backdrop-blur-xl border-r border-white/10 p-4 flex flex-col">
-      <div className="flex items-center gap-2 px-2 py-4">
-        <Building2 className="h-8 w-8 text-blue-500" />
-        <span className="text-xl font-bold">BlockFix</span>
+    <div 
+      className={cn(
+        "relative h-screen bg-black/20 backdrop-blur-xl border-r border-white/10 p-4 flex flex-col transition-all duration-300",
+        isCollapsed ? "w-20" : "w-64"
+      )}
+    >
+      <div className={cn(
+        "flex items-center gap-2 px-2 py-4",
+        isCollapsed && "justify-center"
+      )}>
+        <Building2 className="h-8 w-8 text-blue-500 shrink-0" />
+        <span className={cn(
+          "text-xl font-bold transition-opacity duration-200",
+          isCollapsed && "opacity-0 w-0"
+        )}>BlockFix</span>
       </div>
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute -right-4 top-6 h-8 w-8 rounded-full border border-white/10 bg-black/20 backdrop-blur-xl"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <ChevronLeft className={cn(
+          "h-4 w-4 transition-transform duration-200",
+          isCollapsed && "rotate-180"
+        )} />
+      </Button>
       
       <nav className="flex-1 mt-8">
         <ul className="space-y-2">
@@ -38,17 +66,37 @@ export default function Sidebar() {
             
             return (
               <li key={item.path}>
-                <Link
-                  to={item.path}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-                    "hover:bg-white/10",
-                    isActive ? "bg-white/10 text-blue-400" : "text-gray-400"
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{item.label}</span>
-                </Link>
+                {isCollapsed ? (
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.path}
+                        className={cn(
+                          "flex items-center justify-center p-2 rounded-lg transition-colors",
+                          "hover:bg-white/10",
+                          isActive ? "bg-white/10 text-blue-400" : "text-gray-400"
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="border-white/10 bg-black/50 backdrop-blur-xl">
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Link
+                    to={item.path}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                      "hover:bg-white/10",
+                      isActive ? "bg-white/10 text-blue-400" : "text-gray-400"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                )}
               </li>
             );
           })}
