@@ -34,7 +34,7 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
         .select(`
           *,
           work_orders (*),
-          properties!inner (*)
+          properties (*)
         `)
         .order('created_at', { ascending: false });
 
@@ -44,7 +44,7 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as unknown as MaintenanceRequest[];
+      return data as MaintenanceRequest[];
     },
   });
 
