@@ -10,7 +10,7 @@ interface WarrantyAnalysis {
 }
 
 export default function AIWarrantyAnalysis() {
-  const { data: analysis, isLoading } = useQuery<WarrantyAnalysis>({
+  const { data: analysis, isLoading, error } = useQuery<WarrantyAnalysis>({
     queryKey: ['warranty-analysis'],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke('analyze-warranty-data', {
@@ -18,7 +18,14 @@ export default function AIWarrantyAnalysis() {
       });
       
       if (error) throw error;
-      return data.analysis;
+      
+      // Ensure the response is properly formatted
+      const formattedData = {
+        coverage: Array.isArray(data?.analysis?.coverage) ? data.analysis.coverage : [],
+        suggestions: Array.isArray(data?.analysis?.suggestions) ? data.analysis.suggestions : []
+      };
+      
+      return formattedData;
     },
   });
 
@@ -26,6 +33,14 @@ export default function AIWarrantyAnalysis() {
     return (
       <div className="flex items-center justify-center p-12">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 p-4">
+        Error loading analysis. Please try again later.
       </div>
     );
   }
