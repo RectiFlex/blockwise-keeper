@@ -31,35 +31,42 @@ export class DeploymentService {
         balance: balance.toString()
       });
 
-      // Create contract factory with constructor arguments
+      // Create contract factory
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
         signer
       );
 
-      // Get current network conditions
+      // Get current gas price
       const feeData = await provider.getFeeData();
-      
-      // Set gas parameters
-      const deploymentParams = {
-        gasLimit: BigInt(3000000),
-        maxFeePerGas: feeData.maxFeePerGas,
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-      };
+      if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
+        throw new Error('Could not estimate gas fees');
+      }
+
+      // Estimate gas for deployment
+      const deploymentGasEstimate = await factory.getDeployTransaction(
+        propertyId,
+        title,
+        address
+      ).then(tx => provider.estimateGas(tx));
 
       logger.info('Deploying contract with parameters:', {
-        gasLimit: deploymentParams.gasLimit.toString(),
-        maxFeePerGas: deploymentParams.maxFeePerGas?.toString(),
-        maxPriorityFeePerGas: deploymentParams.maxPriorityFeePerGas?.toString()
+        gasLimit: deploymentGasEstimate.toString(),
+        maxFeePerGas: feeData.maxFeePerGas.toString(),
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.toString()
       });
 
-      // Deploy contract with constructor arguments
+      // Deploy with estimated parameters
       const contract = await factory.deploy(
         propertyId,
         title,
         address,
-        deploymentParams
+        {
+          gasLimit: deploymentGasEstimate * BigInt(12) / BigInt(10), // Add 20% buffer
+          maxFeePerGas: feeData.maxFeePerGas,
+          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+        }
       );
 
       logger.info('Waiting for deployment transaction...');
@@ -76,6 +83,16 @@ export class DeploymentService {
         details: error.details || 'No additional details',
         transaction: error.transaction || 'No transaction data'
       });
+
+      // Provide more user-friendly error messages
+      if (error.message.includes('insufficient funds')) {
+        throw new Error('Insufficient POL tokens for deployment. Please get more tokens from the Polygon Amoy faucet.');
+      } else if (error.message.includes('user rejected')) {
+        throw new Error('Transaction was rejected. Please try again and confirm the transaction in MetaMask.');
+      } else if (error.code === 'NETWORK_ERROR') {
+        throw new Error('Network connection error. Please check your internet connection and try again.');
+      }
+
       throw new Error(`Failed to deploy property contract: ${error.message}`);
     }
   }
