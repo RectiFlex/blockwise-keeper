@@ -26,7 +26,12 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 glass card-gradient p-8 rounded-2xl">
-        <div className="text-center">
+        <div className="text-center space-y-4">
+          <img 
+            src="/lovable-uploads/787661a7-8b14-4770-a8e4-b70371bfb96d.png" 
+            alt="Logo" 
+            className="h-12 mx-auto"
+          />
           <h2 className="text-3xl font-bold">Welcome Back</h2>
           <p className="text-gray-400 mt-2">Sign in to your account to continue</p>
         </div>
