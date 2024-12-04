@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      contractors: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          email: string
+          hourly_rate: number | null
+          id: string
+          name: string
+          phone: string | null
+          specialties: string[] | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          email: string
+          hourly_rate?: number | null
+          id?: string
+          name: string
+          phone?: string | null
+          specialties?: string[] | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          email?: string
+          hourly_rate?: number | null
+          id?: string
+          name?: string
+          phone?: string | null
+          specialties?: string[] | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       maintenance_requests: {
         Row: {
           created_at: string
@@ -80,6 +119,60 @@ export type Database = {
           smart_contract_address?: string | null
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      reports_settings: {
+        Row: {
+          created_at: string
+          id: string
+          report_type: string
+          settings: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_type: string
+          settings?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_type?: string
+          settings?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          id: string
+          notification_preferences: Json | null
+          theme_preferences: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notification_preferences?: Json | null
+          theme_preferences?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notification_preferences?: Json | null
+          theme_preferences?: Json | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
