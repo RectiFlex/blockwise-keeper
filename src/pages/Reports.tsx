@@ -16,7 +16,6 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
   LineChart,
   Line,
   PieChart,
@@ -26,6 +25,31 @@ import {
 import { Loader2 } from "lucide-react";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+
+// Chart configurations
+const chartConfig = {
+  status: {
+    label: "Status",
+    theme: {
+      light: "#0088FE",
+      dark: "#0088FE"
+    }
+  },
+  priority: {
+    label: "Priority",
+    theme: {
+      light: "#00C49F",
+      dark: "#00C49F"
+    }
+  },
+  cost: {
+    label: "Cost",
+    theme: {
+      light: "#FFBB28",
+      dark: "#FFBB28"
+    }
+  }
+};
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState("maintenance");
@@ -175,7 +199,7 @@ export default function Reports() {
                 <CardTitle>Status Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer className="h-[300px]">
+                <ChartContainer className="h-[300px]" config={chartConfig}>
                   <PieChart>
                     <Pie
                       data={statusData}
@@ -201,7 +225,7 @@ export default function Reports() {
                 <CardTitle>Priority Distribution</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer className="h-[300px]">
+                <ChartContainer className="h-[300px]" config={chartConfig}>
                   <BarChart data={priorityData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
@@ -224,7 +248,7 @@ export default function Reports() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ChartContainer className="h-[300px]">
+              <ChartContainer className="h-[300px]" config={chartConfig}>
                 <LineChart data={maintenanceData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="created_at" />
