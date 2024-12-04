@@ -13,6 +13,13 @@ export class DeploymentService {
       const provider = await providerService.getProvider();
       const signer = await providerService.getSigner();
 
+      // Log initial deployment attempt
+      logger.info('Initializing contract deployment...', {
+        propertyId,
+        title,
+        address
+      });
+
       // Ensure we're on the correct network
       const network = await provider.getNetwork();
       if (network.chainId !== BigInt(AMOY_CHAIN_ID)) {
@@ -25,47 +32,60 @@ export class DeploymentService {
         throw new Error('Insufficient POL tokens. Please get POL tokens from the Polygon Amoy faucet.');
       }
 
-      logger.info('Starting contract deployment...', {
+      logger.info('Preparing contract deployment...', {
         propertyId,
-        title,
         balance: balance.toString()
       });
 
-      // Create contract factory
+      // Create contract factory with proper parameter encoding
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
         signer
       );
 
-      // Get current gas price
+      // Encode constructor parameters
+      const encodedParams = factory.interface.encodeDeploy([
+        propertyId,
+        title,
+        address
+      ]);
+
+      logger.info('Encoded constructor parameters:', {
+        encodedParams
+      });
+
+      // Get current gas price with safety margins
       const feeData = await provider.getFeeData();
       if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
         throw new Error('Could not estimate gas fees');
       }
 
-      // Estimate gas for deployment
-      const deploymentGasEstimate = await factory.getDeployTransaction(
-        propertyId,
-        title,
-        address
-      ).then(tx => provider.estimateGas(tx));
+      // Create deployment transaction
+      const deployTx = {
+        data: PROPERTY_BYTECODE + encodedParams.slice(2),
+        maxFeePerGas: feeData.maxFeePerGas * BigInt(12) / BigInt(10), // Add 20% buffer
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+      };
+
+      // Estimate gas with the complete transaction
+      const gasEstimate = await provider.estimateGas(deployTx);
 
       logger.info('Deploying contract with parameters:', {
-        gasLimit: deploymentGasEstimate.toString(),
-        maxFeePerGas: feeData.maxFeePerGas.toString(),
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas.toString()
+        gasLimit: gasEstimate.toString(),
+        maxFeePerGas: deployTx.maxFeePerGas.toString(),
+        maxPriorityFeePerGas: deployTx.maxPriorityFeePerGas.toString()
       });
 
-      // Deploy with estimated parameters
+      // Deploy the contract with estimated parameters
       const contract = await factory.deploy(
         propertyId,
         title,
         address,
         {
-          gasLimit: deploymentGasEstimate * BigInt(12) / BigInt(10), // Add 20% buffer
-          maxFeePerGas: feeData.maxFeePerGas,
-          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+          gasLimit: gasEstimate * BigInt(12) / BigInt(10), // Add 20% buffer
+          maxFeePerGas: deployTx.maxFeePerGas,
+          maxPriorityFeePerGas: deployTx.maxPriorityFeePerGas,
         }
       );
 
@@ -84,7 +104,6 @@ export class DeploymentService {
         transaction: error.transaction || 'No transaction data'
       });
 
-      // Provide more user-friendly error messages
       if (error.message.includes('insufficient funds')) {
         throw new Error('Insufficient POL tokens for deployment. Please get more tokens from the Polygon Amoy faucet.');
       } else if (error.message.includes('user rejected')) {
@@ -93,7 +112,8 @@ export class DeploymentService {
         throw new Error('Network connection error. Please check your internet connection and try again.');
       }
 
-      throw new Error(`Failed to deploy property contract: ${error.message}`);
+      // Provide more context for deployment failures
+      throw new Error(`Failed to deploy property contract: ${error.message}. Please ensure you have sufficient POL tokens and are connected to Polygon Amoy Testnet.`);
     }
   }
 }
