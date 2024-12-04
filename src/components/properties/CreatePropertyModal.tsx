@@ -51,7 +51,7 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
   const addPropertyMutation = useMutation({
     mutationFn: async (values: PropertyFormValues) => {
       const user = (await supabase.auth.getUser()).data.user;
-      if (!user) throw new Error("User not authenticated");
+      if (!user) throw new Error("Please sign in to add a property");
 
       setIsDeploying(true);
       try {
@@ -90,7 +90,7 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
       onOpenChange(false);
       form.reset();
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to add property",
