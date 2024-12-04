@@ -11,8 +11,8 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
       isCollapsed && "justify-center"
     )}>
       <img 
-        src="/lovable-uploads/1db623eb-cd03-4145-83e9-884752c42d4b.png" 
-        alt="BlockFix" 
+        src="/lovable-uploads/787661a7-8b14-4770-a8e4-b70371bfb96d.png" 
+        alt="Fix" 
         className="h-8" 
       />
     </div>
