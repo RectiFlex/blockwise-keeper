@@ -64,7 +64,7 @@ export default function CompanySettings() {
       } else {
         const { error } = await supabase
           .from("company_settings")
-          .insert([values]);
+          .insert(values);
         if (error) throw error;
       }
     },

@@ -21,10 +21,15 @@ const userSettingsSchema = z.object({
   notification_preferences: z.object({
     email: z.boolean().default(true),
     push: z.boolean().default(true),
-  }).default({}),
+  }).default({
+    email: true,
+    push: true,
+  }),
   theme_preferences: z.object({
     darkMode: z.boolean().default(false),
-  }).default({}),
+  }).default({
+    darkMode: false,
+  }),
 });
 
 type UserSettingsFormValues = z.infer<typeof userSettingsSchema>;
@@ -99,9 +104,17 @@ export default function UserSettings() {
 
   useEffect(() => {
     if (userSettings) {
+      const notificationPrefs = userSettings.notification_preferences as { email: boolean; push: boolean };
+      const themePrefs = userSettings.theme_preferences as { darkMode: boolean };
+      
       form.reset({
-        notification_preferences: userSettings.notification_preferences,
-        theme_preferences: userSettings.theme_preferences,
+        notification_preferences: {
+          email: notificationPrefs?.email ?? true,
+          push: notificationPrefs?.push ?? true,
+        },
+        theme_preferences: {
+          darkMode: themePrefs?.darkMode ?? false,
+        },
       });
     }
   }, [userSettings, form]);
