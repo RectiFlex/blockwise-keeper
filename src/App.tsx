@@ -35,7 +35,6 @@ function App() {
         <Router>
           <PageViewTracker />
           <Routes>
-            {/* Redirect root to auth page */}
             <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route element={<Layout><Outlet /></Layout>}>
@@ -48,7 +47,6 @@ function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/ai" element={<AI />} />
             </Route>
-            {/* Catch all other routes and redirect to auth */}
             <Route path="*" element={<Navigate to="/auth" replace />} />
           </Routes>
           <Toaster />
