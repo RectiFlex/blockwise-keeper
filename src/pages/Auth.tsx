@@ -10,13 +10,20 @@ export default function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/dashboard");
+      }
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN") {
         toast({
           title: "Welcome!",
           description: "You have successfully signed in.",
         });
-        navigate("/");
+        navigate("/dashboard");
       }
     });
 

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation, Outlet } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation, Outlet, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -35,9 +35,11 @@ function App() {
         <Router>
           <PageViewTracker />
           <Routes>
+            {/* Redirect root to auth page */}
+            <Route path="/" element={<Navigate to="/auth" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route element={<Layout><Outlet /></Layout>}>
-              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/properties" element={<Properties />} />
               <Route path="/properties/:id" element={<PropertyDetails />} />
               <Route path="/maintenance" element={<Maintenance />} />
@@ -46,6 +48,8 @@ function App() {
               <Route path="/settings" element={<Settings />} />
               <Route path="/ai" element={<AI />} />
             </Route>
+            {/* Catch all other routes and redirect to auth */}
+            <Route path="*" element={<Navigate to="/auth" replace />} />
           </Routes>
           <Toaster />
         </Router>
