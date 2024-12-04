@@ -29,12 +29,12 @@ export default function Sidebar() {
   return (
     <div 
       className={cn(
-        "relative h-screen bg-black/20 backdrop-blur-xl border-r border-white/10 p-4 flex flex-col transition-all duration-300",
+        "relative h-[calc(100vh-2rem)] m-4 glass rounded-2xl flex flex-col transition-all duration-300",
         isCollapsed ? "w-20" : "w-64"
       )}
     >
       <div className={cn(
-        "flex items-center gap-2 px-2 py-4",
+        "flex items-center gap-2 px-4 py-6",
         isCollapsed && "justify-center"
       )}>
         <Building2 className="h-8 w-8 text-blue-500 shrink-0" />
@@ -47,7 +47,7 @@ export default function Sidebar() {
       <Button
         variant="ghost"
         size="icon"
-        className="absolute -right-4 top-6 h-8 w-8 rounded-full border border-white/10 bg-black/20 backdrop-blur-xl"
+        className="absolute -right-4 top-8 h-8 w-8 rounded-full border border-white/10 bg-black/20 backdrop-blur-xl"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
         <ChevronLeft className={cn(
@@ -56,7 +56,7 @@ export default function Sidebar() {
         )} />
       </Button>
       
-      <nav className="flex-1 mt-8">
+      <nav className="flex-1 px-2">
         <ul className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
