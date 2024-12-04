@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
+import Contractors from "./pages/Contractors";
 
 const queryClient = new QueryClient();
 
@@ -12,6 +13,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout><Dashboard /></Layout>} />
+          <Route path="/contractors" element={<Layout><Contractors /></Layout>} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
