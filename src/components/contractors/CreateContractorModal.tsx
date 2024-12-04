@@ -201,7 +201,7 @@ export default function CreateContractorModal({
             <AlertDialogTitle>Confirm Creation</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to create this contractor with the provided information?
-            </DialogDialogDescription>
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
