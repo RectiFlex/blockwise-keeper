@@ -98,6 +98,12 @@ export class Web3Service {
         throw new Error('Wallet not connected. Please connect your wallet first.');
       }
 
+      // Ensure we're on the correct network
+      const network = await this.provider.getNetwork();
+      if (network.chainId !== BigInt(AMOY_CHAIN_ID)) {
+        throw new Error('Please switch to Polygon Amoy Testnet in MetaMask');
+      }
+
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
@@ -106,7 +112,7 @@ export class Web3Service {
 
       logger.info('Deploying contract to Polygon Amoy...');
       const contract = await factory.deploy();
-      logger.info('Waiting for deployment...');
+      logger.info('Waiting for deployment transaction...');
       await contract.waitForDeployment();
       
       const contractAddress = await contract.getAddress();
