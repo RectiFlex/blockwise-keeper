@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { ContractorFormFields } from "./ContractorFormFields";
 import { contractorFormSchema, type ContractorFormValues } from "./ContractorFormSchema";
-import { ConfirmContractorDialog } from "./ConfirmContractorDialog";
+import ConfirmContractorDialog from "./ConfirmContractorDialog";
 
 interface EditContractorModalProps {
   contractor: any;

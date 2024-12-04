@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { NotificationSettings } from "./NotificationSettings";
 import { ThemeSettings } from "./ThemeSettings";
-import { userSettingsSchema, type UserSettingsFormValues } from "./UserSettingsSchema";
+import { userSettingsSchema, type UserSettingsFormValues, parseUserSettings } from "./UserSettingsSchema";
 
 export default function UserSettings() {
   const { toast } = useToast();
@@ -81,10 +81,8 @@ export default function UserSettings() {
 
   useEffect(() => {
     if (userSettings) {
-      form.reset({
-        notification_preferences: userSettings.notification_preferences,
-        theme_preferences: userSettings.theme_preferences,
-      });
+      const parsedSettings = parseUserSettings(userSettings);
+      form.reset(parsedSettings);
     }
   }, [userSettings, form]);
 
