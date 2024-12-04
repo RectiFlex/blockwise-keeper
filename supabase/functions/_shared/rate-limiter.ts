@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { corsHeaders } from '../_shared/cors';
 
 interface RateLimitOptions {
@@ -91,3 +91,9 @@ export async function rateLimiter(
     );
   }
 }
+
+<lov-write file_path="supabase/functions/_shared/cors.ts">
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
