@@ -10,8 +10,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clipboard, Calendar, Wrench } from "lucide-react";
+import { Clipboard, Calendar, Wrench, Brain } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useState } from "react";
 import { Database } from "@/integrations/supabase/types";
 
 type MaintenanceRequest = Database["public"]["Tables"]["maintenance_requests"]["Row"] & {
@@ -25,6 +32,9 @@ interface MaintenanceRequestListProps {
 
 export default function MaintenanceRequestList({ showWorkOrders = false }: MaintenanceRequestListProps) {
   const queryClient = useQueryClient();
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['maintenance-requests', { workOrders: showWorkOrders }],
@@ -89,6 +99,33 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
     },
   });
 
+  const analyzeRequest = async (requestId: string) => {
+    setIsAnalyzing(true);
+    setSelectedRequestId(requestId);
+    try {
+      const response = await fetch('/functions/v1/analyze-maintenance-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ requestId }),
+      });
+
+      const data = await response.json();
+      setAiAnalysis(data.analysis);
+    } catch (error) {
+      console.error('Error analyzing request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to analyze maintenance request",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -111,59 +148,91 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
   };
 
   return (
-    <div className="rounded-lg border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Property</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Priority</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requests?.map((request) => (
-            <TableRow key={request.id}>
-              <TableCell className="font-medium">{request.title}</TableCell>
-              <TableCell>{request.properties?.title}</TableCell>
-              <TableCell>
-                <Badge className={getStatusColor(request.status || '')}>
-                  {request.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline">{request.priority}</Badge>
-              </TableCell>
-              <TableCell>
-                {new Date(request.created_at).toLocaleDateString()}
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="icon">
-                    <Clipboard className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Calendar className="h-4 w-4" />
-                  </Button>
-                  {!request.work_orders?.length && request.status === 'pending' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleConvertToWorkOrder(request.id)}
-                      disabled={convertToWorkOrder.isPending}
-                      title="Convert to Work Order"
-                    >
-                      <Wrench className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
+    <>
+      <div className="rounded-lg border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Property</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Priority</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {requests?.map((request) => (
+              <TableRow key={request.id}>
+                <TableCell className="font-medium">{request.title}</TableCell>
+                <TableCell>{request.properties?.title}</TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(request.status || '')}>
+                    {request.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">{request.priority}</Badge>
+                </TableCell>
+                <TableCell>
+                  {new Date(request.created_at).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="icon">
+                      <Clipboard className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                    {!request.work_orders?.length && request.status === 'pending' && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleConvertToWorkOrder(request.id)}
+                          disabled={convertToWorkOrder.isPending}
+                          title="Convert to Work Order"
+                        >
+                          <Wrench className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => analyzeRequest(request.id)}
+                          disabled={isAnalyzing}
+                          title="Analyze with AI"
+                        >
+                          <Brain className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={!!selectedRequestId} onOpenChange={() => setSelectedRequestId(null)}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>AI Analysis</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {isAnalyzing ? (
+              <div className="flex items-center justify-center p-4">
+                <span className="animate-pulse">Analyzing request...</span>
+              </div>
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                <pre className="whitespace-pre-wrap font-sans">{aiAnalysis}</pre>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
