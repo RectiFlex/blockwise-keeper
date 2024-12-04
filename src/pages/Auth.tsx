@@ -4,6 +4,7 @@ import { Auth as SupabaseAuth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ThreeBackground from "@/components/auth/ThreeBackground";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -31,8 +32,9 @@ export default function Auth() {
   }, [navigate, toast]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <div className="w-full max-w-md space-y-8 bg-card p-8 rounded-2xl shadow-lg">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background/50">
+      <ThreeBackground />
+      <div className="w-full max-w-md space-y-8 glass p-8 rounded-2xl shadow-2xl backdrop-blur-xl">
         <div className="text-center space-y-4">
           <img 
             src="/lovable-uploads/787661a7-8b14-4770-a8e4-b70371bfb96d.png" 
@@ -60,7 +62,7 @@ export default function Auth() {
             className: {
               container: 'space-y-4',
               button: 'bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-2 px-4 rounded-lg w-full',
-              input: 'bg-background border border-input rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary',
+              input: 'bg-background/50 backdrop-blur-sm border border-input rounded-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary',
               label: 'text-foreground',
             }
           }}
