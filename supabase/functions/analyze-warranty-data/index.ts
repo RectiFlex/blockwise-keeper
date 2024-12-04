@@ -1,11 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -45,26 +40,36 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'You are an expert in property maintenance and warranty analysis. Analyze the data and provide insights in JSON format with two arrays: "coverage" for analysis of current coverage and compliance, and "suggestions" for specific recommendations.'
+            content: 'You are an expert in property maintenance and warranty analysis. Analyze the data and provide insights about warranty coverage and recommendations. Return your response as a JSON object with two arrays: "coverage" for analysis points and "suggestions" for recommendations.'
           },
           {
             role: 'user',
             content: JSON.stringify(analysisPrompt)
           }
         ],
+        temperature: 0.7,
+        max_tokens: 1000
       }),
     });
 
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.statusText}`);
+    }
+
     const data = await response.json();
+    console.log('OpenAI response:', data);
+
     let analysis;
-    
     try {
+      // Attempt to parse the response content as JSON
       analysis = JSON.parse(data.choices[0].message.content);
     } catch (error) {
       console.error('Failed to parse OpenAI response:', error);
+      // Fallback to a structured format if parsing fails
+      const content = data.choices[0].message.content;
       analysis = {
-        coverage: ['Error analyzing warranty coverage'],
-        suggestions: ['Error generating suggestions']
+        coverage: [content.split('\n\n')[0] || 'Error analyzing warranty coverage'],
+        suggestions: [content.split('\n\n')[1] || 'Error generating suggestions']
       };
     }
 
