@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { web3Service } from "@/services/web3Service";
@@ -13,29 +12,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import { PropertyFormFields } from "./PropertyFormFields";
+import { propertyFormSchema, type PropertyFormValues } from "./PropertyFormSchema";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
-// Move form schema to a separate validation file
-const propertyFormSchema = z.object({
-  title: z.string().min(1, "Title is required").max(100, "Title is too long"),
-  address: z.string().min(1, "Address is required").max(200, "Address is too long"),
-  ownerName: z.string().min(1, "Owner name is required"),
-  ownerEmail: z.string().email("Invalid email address"),
-  ownerPhone: z.string().min(1, "Phone number is required")
-    .regex(/^\+?[\d\s-()]+$/, "Invalid phone number format"),
-});
-
-type PropertyFormValues = z.infer<typeof propertyFormSchema>;
 
 interface CreatePropertyModalProps {
   open: boolean;
@@ -127,71 +108,7 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter property title" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter property address" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ownerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Owner Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter owner's name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ownerEmail"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Owner Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter owner's email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="ownerPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Owner Phone</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter owner's phone number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <PropertyFormFields form={form} />
               <Button 
                 type="submit" 
                 className="w-full"
