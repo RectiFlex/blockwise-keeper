@@ -27,16 +27,22 @@ export default function Properties() {
     queryKey: ['property_expenses'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('work_orders')
-        .select('property_id, actual_cost');
+        .from('maintenance_requests')
+        .select(`
+          property_id,
+          work_orders(actual_cost)
+        `);
       
       if (error) throw error;
       
       // Calculate total expenses per property
-      const expensesByProperty = data.reduce((acc: Record<string, number>, order) => {
-        if (order.property_id && order.actual_cost) {
-          acc[order.property_id] = (acc[order.property_id] || 0) + Number(order.actual_cost);
-        }
+      const expensesByProperty = data.reduce((acc: Record<string, number>, request) => {
+        const propertyId = request.property_id;
+        const costs = request.work_orders?.reduce((sum: number, order: any) => {
+          return sum + (order.actual_cost || 0);
+        }, 0) || 0;
+        
+        acc[propertyId] = (acc[propertyId] || 0) + costs;
         return acc;
       }, {});
       
