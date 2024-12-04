@@ -38,6 +38,7 @@ export default function Auth() {
         
         <SupabaseAuth 
           supabaseClient={supabase} 
+          providers={[]}
           appearance={{
             theme: ThemeSupa,
             variables: {
