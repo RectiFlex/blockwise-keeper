@@ -7,12 +7,8 @@ export class ProviderService {
   private signer: ethers.Signer | null = null;
 
   private async initializeProvider(): Promise<void> {
-    if (typeof window === 'undefined') {
-      throw new Error('Web3Service must be used in browser environment');
-    }
-
-    if (!window.ethereum) {
-      throw new Error('Please install MetaMask to use this feature. Visit https://metamask.io');
+    if (typeof window === 'undefined' || !window.ethereum) {
+      throw new Error('Please install MetaMask to use this feature');
     }
 
     this.provider = new ethers.BrowserProvider(window.ethereum);
@@ -46,12 +42,13 @@ export class ProviderService {
         }
       }
 
+      // Request account access
       await window.ethereum?.request({ method: 'eth_requestAccounts' });
       this.signer = await this.provider.getSigner();
       return await this.signer.getAddress();
     } catch (error: any) {
       logger.error('Error connecting wallet:', { error: error.message });
-      throw new Error(error.message || 'Failed to connect wallet. Please make sure MetaMask is installed and you have POL tokens.');
+      throw new Error('Failed to connect wallet. Please make sure MetaMask is installed and you have POL tokens.');
     }
   }
 

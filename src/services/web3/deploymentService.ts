@@ -22,13 +22,16 @@ export class DeploymentService {
       // Check POL balance
       const balance = await provider.getBalance(await signer.getAddress());
       if (balance === BigInt(0)) {
-        throw new Error('Insufficient POL tokens. Please get POL tokens from the Polygon Amoy faucet before deploying contracts.');
+        throw new Error('Insufficient POL tokens. Please get POL tokens from the Polygon Amoy faucet.');
       }
 
-      logger.info('Starting contract deployment process...');
-      logger.info('Current POL balance:', { balance: balance.toString() });
-      
-      // Create contract factory
+      logger.info('Starting contract deployment...', {
+        propertyId,
+        title,
+        balance: balance.toString()
+      });
+
+      // Create contract factory with constructor arguments
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
@@ -37,69 +40,33 @@ export class DeploymentService {
 
       // Get current network conditions
       const feeData = await provider.getFeeData();
-      logger.info('Current network fees:', {
-        maxFeePerGas: feeData.maxFeePerGas?.toString(),
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas?.toString(),
-        gasPrice: feeData.gasPrice?.toString()
-      });
-
-      // Prepare deployment transaction
-      const deployTransaction = await factory.getDeployTransaction();
-      logger.info('Estimating gas for deployment...');
       
-      // Set gas limits
-      const baseGasLimit = BigInt(3000000);
-      const gasBuffer = BigInt(500000);
-      const totalGasLimit = baseGasLimit + gasBuffer;
-
-      // Calculate total cost in POL
-      const maxGasCost = totalGasLimit * (feeData.maxFeePerGas || BigInt(0));
-      logger.info('Estimated maximum deployment cost in POL:', {
-        maxGasCost: ethers.formatEther(maxGasCost),
-        totalGasLimit: totalGasLimit.toString()
-      });
-
-      // Verify sufficient balance
-      if (balance < maxGasCost) {
-        throw new Error(`Insufficient POL balance. You need at least ${ethers.formatEther(maxGasCost)} POL for this transaction.`);
-      }
-
-      logger.info('Deploying contract with parameters:', {
-        gasLimit: totalGasLimit.toString(),
-        maxFeePerGas: feeData.maxFeePerGas?.toString(),
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas?.toString()
-      });
-
-      // Deploy with explicit gas settings
-      const contract = await factory.deploy({
-        gasLimit: totalGasLimit,
+      // Set gas parameters
+      const deploymentParams = {
+        gasLimit: BigInt(3000000),
         maxFeePerGas: feeData.maxFeePerGas,
         maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+      };
+
+      logger.info('Deploying contract with parameters:', {
+        gasLimit: deploymentParams.gasLimit.toString(),
+        maxFeePerGas: deploymentParams.maxFeePerGas?.toString(),
+        maxPriorityFeePerGas: deploymentParams.maxPriorityFeePerGas?.toString()
       });
 
-      logger.info('Deployment transaction sent, waiting for confirmation...');
+      // Deploy contract with constructor arguments
+      const contract = await factory.deploy(
+        propertyId,
+        title,
+        address,
+        deploymentParams
+      );
+
+      logger.info('Waiting for deployment transaction...');
       await contract.waitForDeployment();
       
       const contractAddress = await contract.getAddress();
-      logger.info('Contract deployed successfully at:', { contractAddress });
-      
-      // Initialize the contract with property details
-      const contractInstance = new ethers.Contract(
-        contractAddress,
-        PROPERTY_CONTRACT_ABI,
-        signer
-      );
-      
-      logger.info('Initializing contract...');
-      const initTx = await contractInstance.initialize(propertyId, title, address, {
-        gasLimit: BigInt(1000000),
-        maxFeePerGas: feeData.maxFeePerGas,
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-      });
-
-      logger.info('Waiting for initialization transaction...');
-      await initTx.wait();
-      logger.info('Contract initialized successfully');
+      logger.info('Contract deployed successfully:', { contractAddress });
 
       return contractAddress;
     } catch (error: any) {
