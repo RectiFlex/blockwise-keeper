@@ -12,14 +12,14 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
     )}>
       {isCollapsed ? (
         <img 
-          src="/lovable-uploads/7ff2f9bd-bf12-41c9-b41d-e0c6dfda0ae4.png" 
-          alt="Fix" 
+          src="/lovable-uploads/ffaebf99-5ca2-46e8-8ed1-dc3cfff04627.png" 
+          alt="BlockFix" 
           className="h-8" 
         />
       ) : (
         <img 
-          src="/lovable-uploads/787661a7-8b14-4770-a8e4-b70371bfb96d.png" 
-          alt="Fix" 
+          src="/lovable-uploads/ffaebf99-5ca2-46e8-8ed1-dc3cfff04627.png" 
+          alt="BlockFix" 
           className="h-8" 
         />
       )}
