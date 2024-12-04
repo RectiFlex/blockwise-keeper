@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -10,9 +10,17 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clipboard, Check, X, Calendar } from "lucide-react";
+import { Clipboard, Check, X, Calendar, Wrench } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+import { Database } from "@/integrations/supabase/types";
+
+type MaintenanceRequest = Database["public"]["Tables"]["maintenance_requests"]["Row"] & {
+  work_orders: Database["public"]["Tables"]["work_orders"]["Row"][] | null;
+};
 
 export default function MaintenanceRequestList() {
+  const queryClient = useQueryClient();
+
   const { data: requests, isLoading } = useQuery({
     queryKey: ['maintenance-requests'],
     queryFn: async () => {
@@ -25,7 +33,48 @@ export default function MaintenanceRequestList() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      return data as MaintenanceRequest[];
+    },
+  });
+
+  const convertToWorkOrder = useMutation({
+    mutationFn: async (requestId: string) => {
+      const { data: workOrder, error: workOrderError } = await supabase
+        .from('work_orders')
+        .insert([
+          {
+            maintenance_request_id: requestId,
+            status: 'pending',
+          },
+        ])
+        .select()
+        .single();
+
+      if (workOrderError) throw workOrderError;
+
+      const { error: requestError } = await supabase
+        .from('maintenance_requests')
+        .update({ status: 'in_progress' })
+        .eq('id', requestId);
+
+      if (requestError) throw requestError;
+
+      return workOrder;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['maintenance-requests'] });
+      toast({
+        title: "Success",
+        description: "Maintenance request converted to work order",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to convert request to work order",
+        variant: "destructive",
+      });
+      console.error('Error converting to work order:', error);
     },
   });
 
@@ -46,6 +95,10 @@ export default function MaintenanceRequestList() {
     }
   };
 
+  const handleConvertToWorkOrder = (requestId: string) => {
+    convertToWorkOrder.mutate(requestId);
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       <Table>
@@ -63,7 +116,7 @@ export default function MaintenanceRequestList() {
             <TableRow key={request.id}>
               <TableCell className="font-medium">{request.title}</TableCell>
               <TableCell>
-                <Badge className={getStatusColor(request.status)}>
+                <Badge className={getStatusColor(request.status || '')}>
                   {request.status}
                 </Badge>
               </TableCell>
@@ -81,6 +134,16 @@ export default function MaintenanceRequestList() {
                   <Button variant="ghost" size="icon">
                     <Calendar className="h-4 w-4" />
                   </Button>
+                  {request.status === 'pending' && request.work_orders?.length === 0 && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleConvertToWorkOrder(request.id)}
+                      disabled={convertToWorkOrder.isPending}
+                    >
+                      <Wrench className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>
