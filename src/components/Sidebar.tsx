@@ -8,6 +8,7 @@ import {
   FileText,
   LayoutDashboard,
   ChevronLeft,
+  Brain,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
@@ -19,6 +20,7 @@ const menuItems = [
   { icon: Wrench, label: "Maintenance", path: "/maintenance" },
   { icon: Users, label: "Contractors", path: "/contractors" },
   { icon: FileText, label: "Reports", path: "/reports" },
+  { icon: Brain, label: "AI Assistant", path: "/ai" },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 

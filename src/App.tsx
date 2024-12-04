@@ -9,6 +9,7 @@ import Maintenance from "@/pages/Maintenance";
 import Contractors from "@/pages/Contractors";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import AI from "@/pages/AI";
 import "./App.css";
 
 // Create a client
@@ -35,6 +36,7 @@ function App() {
               <Route path="/contractors" element={<Contractors />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/ai" element={<AI />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Layout>
