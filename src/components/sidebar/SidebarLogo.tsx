@@ -15,10 +15,6 @@ export function SidebarLogo({ isCollapsed }: SidebarLogoProps) {
         alt="BlockFix" 
         className="h-8" 
       />
-      <span className={cn(
-        "text-xl font-bold transition-opacity duration-200",
-        isCollapsed && "opacity-0 w-0 hidden"
-      )}>BlockFix</span>
     </div>
   );
 }
