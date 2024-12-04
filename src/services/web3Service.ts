@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { logger } from '@/lib/logger';
 
 const PROPERTY_CONTRACT_ABI = [
   "function initialize(string memory _propertyId, string memory _title, string memory _address) public",
@@ -14,33 +15,46 @@ const MUMBAI_RPC_URL = "https://rpc-mumbai.maticvigil.com";
 const MUMBAI_CHAIN_ID = 80001;
 
 export class Web3Service {
-  private provider: ethers.BrowserProvider;
+  private provider: ethers.BrowserProvider | null = null;
   private signer: ethers.Signer | null = null;
 
   constructor() {
-    if (typeof window !== 'undefined' && window.ethereum) {
-      this.provider = new ethers.BrowserProvider(window.ethereum);
-    } else {
-      throw new Error('MetaMask is not installed');
+    // Don't initialize provider in constructor
+    // We'll do it lazily when needed
+  }
+
+  private async initializeProvider(): Promise<void> {
+    if (typeof window === 'undefined') {
+      throw new Error('Web3Service must be used in browser environment');
     }
+
+    if (!window.ethereum) {
+      throw new Error('Please install MetaMask to use this feature. Visit https://metamask.io');
+    }
+
+    this.provider = new ethers.BrowserProvider(window.ethereum);
   }
 
   async connectWallet(): Promise<string> {
     try {
-      if (!window.ethereum) {
-        throw new Error('MetaMask is not installed');
+      if (!this.provider) {
+        await this.initializeProvider();
+      }
+
+      if (!this.provider) {
+        throw new Error('Provider initialization failed');
       }
 
       // Request network switch to Mumbai testnet
       try {
-        await window.ethereum.request({
+        await window.ethereum?.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: `0x${MUMBAI_CHAIN_ID.toString(16)}` }],
         });
       } catch (switchError: any) {
         // This error code indicates that the chain has not been added to MetaMask
         if (switchError.code === 4902) {
-          await window.ethereum.request({
+          await window.ethereum?.request({
             method: 'wallet_addEthereumChain',
             params: [
               {
@@ -61,12 +75,12 @@ export class Web3Service {
         }
       }
 
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      await window.ethereum?.request({ method: 'eth_requestAccounts' });
       this.signer = await this.provider.getSigner();
       return await this.signer.getAddress();
-    } catch (error) {
-      console.error('Error connecting wallet:', error);
-      throw new Error('Failed to connect wallet. Please make sure MetaMask is installed and unlocked.');
+    } catch (error: any) {
+      logger.error('Error connecting wallet:', { error: error.message });
+      throw new Error(error.message || 'Failed to connect wallet. Please make sure MetaMask is installed and unlocked.');
     }
   }
 
@@ -76,6 +90,10 @@ export class Web3Service {
     address: string
   ): Promise<string> {
     try {
+      if (!this.provider) {
+        await this.initializeProvider();
+      }
+
       if (!this.signer) {
         throw new Error('Wallet not connected. Please connect your wallet first.');
       }
@@ -86,13 +104,13 @@ export class Web3Service {
         this.signer
       );
 
-      console.log('Deploying contract to Polygon Mumbai...');
+      logger.info('Deploying contract to Polygon Mumbai...');
       const contract = await factory.deploy();
-      console.log('Waiting for deployment...');
+      logger.info('Waiting for deployment...');
       await contract.waitForDeployment();
       
       const contractAddress = await contract.getAddress();
-      console.log('Contract deployed at:', contractAddress);
+      logger.info('Contract deployed at:', { contractAddress });
       
       // Initialize the contract with property details
       const contractInstance = new ethers.Contract(
@@ -101,15 +119,15 @@ export class Web3Service {
         this.signer
       );
       
-      console.log('Initializing contract...');
+      logger.info('Initializing contract...');
       const tx = await contractInstance.initialize(propertyId, title, address);
       await tx.wait();
-      console.log('Contract initialized on Polygon Mumbai');
+      logger.info('Contract initialized on Polygon Mumbai');
 
       return contractAddress;
-    } catch (error) {
-      console.error('Error deploying contract:', error);
-      throw new Error('Failed to deploy property contract. Please check your wallet and try again.');
+    } catch (error: any) {
+      logger.error('Error deploying contract:', { error: error.message });
+      throw new Error(error.message || 'Failed to deploy property contract. Please check your wallet and try again.');
     }
   }
 }
