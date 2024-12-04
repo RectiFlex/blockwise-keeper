@@ -14,15 +14,16 @@ const supabaseClient = createClient(
 
 serve(async (req) => {
   const signature = req.headers.get('stripe-signature');
-  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
   
   try {
     const body = await req.text();
     const event = stripe.webhooks.constructEvent(
       body,
       signature!,
-      webhookSecret!
+      Deno.env.get('STRIPE_WEBHOOK_SECRET')!
     );
+
+    console.log(`Processing event: ${event.type}`);
 
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -30,13 +31,16 @@ serve(async (req) => {
         const userId = session.client_reference_id;
         
         if (userId) {
-          await supabaseClient
+          const { error } = await supabaseClient
             .from('profiles')
             .update({ 
               subscription_status: 'mvp',
               subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
             })
             .eq('id', userId);
+
+          if (error) throw error;
+          console.log(`Updated subscription status for user: ${userId}`);
         }
         break;
       }
@@ -46,13 +50,16 @@ serve(async (req) => {
         const userId = subscription.metadata.user_id;
         
         if (userId) {
-          await supabaseClient
+          const { error } = await supabaseClient
             .from('profiles')
             .update({ 
               subscription_status: 'free',
               subscription_end_date: null
             })
             .eq('id', userId);
+
+          if (error) throw error;
+          console.log(`Removed subscription for user: ${userId}`);
         }
         break;
       }
@@ -63,6 +70,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (err) {
+    console.error(`Webhook Error: ${err.message}`);
     return new Response(
       JSON.stringify({ error: `Webhook Error: ${err.message}` }),
       {

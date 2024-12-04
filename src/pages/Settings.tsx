@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { loadStripe } from "@stripe/stripe-js";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("company");
@@ -34,27 +35,18 @@ export default function Settings() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user found');
 
-      const response = await fetch(
-        'https://airhcklzafroemmmqdyc.functions.supabase.co/create-checkout-session',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ user_id: user.id }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: { user_id: user.id }
+      });
 
-      const { sessionId, error } = await response.json();
-      if (error) throw new Error(error);
+      if (error) throw error;
+      if (!data.sessionId) throw new Error('No session ID returned');
 
-      // Redirect to Stripe Checkout
-      const stripe = await loadStripe(process.env.STRIPE_PUBLIC_KEY!);
+      const stripe = await loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
       if (!stripe) throw new Error('Stripe failed to load');
 
-      await stripe.redirectToCheckout({ sessionId });
-    } catch (error) {
+      await stripe.redirectToCheckout({ sessionId: data.sessionId });
+    } catch (error: any) {
       toast({
         title: "Error",
         description: error.message,
