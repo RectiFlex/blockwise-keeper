@@ -16,6 +16,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import type { Database } from "@/integrations/supabase/types";
+
+type Contractor = Database['public']['Tables']['contractors']['Insert'];
 
 const contractorFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -65,11 +68,16 @@ export default function CreateContractorModal({
     const formData = form.getValues();
     
     try {
-      const { error } = await supabase.from("contractors").insert({
-        ...formData,
+      const contractorData: Contractor = {
+        name: formData.name,
+        email: formData.email,
+        company_name: formData.company_name || null,
+        phone: formData.phone || null,
         specialties: formData.specialties.split(",").map((s) => s.trim()),
         hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
-      });
+      };
+
+      const { error } = await supabase.from("contractors").insert(contractorData);
 
       if (error) throw error;
 

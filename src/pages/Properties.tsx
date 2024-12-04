@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PropertyCard } from "@/components/properties/PropertyCard";
@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LoadingState } from "@/components/ui/loading-state";
+import type { Database } from "@/integrations/supabase/types";
 
-// Define types for better type safety
 type Property = Database['public']['Tables']['properties']['Row'] & {
   maintenance_requests: { count: number }[];
 };
