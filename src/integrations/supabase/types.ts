@@ -9,7 +9,92 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      maintenance_requests: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          priority: string
+          property_id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["maintenance_status"] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          priority?: string
+          property_id: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          priority?: string
+          property_id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      work_orders: {
+        Row: {
+          actual_cost: number | null
+          completed_date: string | null
+          contractor_id: string | null
+          created_at: string
+          estimated_cost: number | null
+          id: string
+          maintenance_request_id: string
+          notes: string | null
+          scheduled_date: string | null
+          status: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          completed_date?: string | null
+          contractor_id?: string | null
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          maintenance_request_id: string
+          notes?: string | null
+          scheduled_date?: string | null
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at?: string
+        }
+        Update: {
+          actual_cost?: number | null
+          completed_date?: string | null
+          contractor_id?: string | null
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          maintenance_request_id?: string
+          notes?: string | null
+          scheduled_date?: string | null
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_orders_maintenance_request_id_fkey"
+            columns: ["maintenance_request_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +103,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      maintenance_status: "pending" | "in_progress" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
