@@ -5,12 +5,13 @@ import * as z from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { web3Service } from "@/services/web3Service";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -22,13 +23,16 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
+// Move form schema to a separate validation file
 const propertyFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  address: z.string().min(1, "Address is required"),
+  title: z.string().min(1, "Title is required").max(100, "Title is too long"),
+  address: z.string().min(1, "Address is required").max(200, "Address is too long"),
   ownerName: z.string().min(1, "Owner name is required"),
   ownerEmail: z.string().email("Invalid email address"),
-  ownerPhone: z.string().min(1, "Phone number is required"),
+  ownerPhone: z.string().min(1, "Phone number is required")
+    .regex(/^\+?[\d\s-()]+$/, "Invalid phone number format"),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -40,6 +44,7 @@ interface CreatePropertyModalProps {
 
 export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalProps) {
   const [isDeploying, setIsDeploying] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -61,7 +66,6 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
 
       setIsDeploying(true);
       try {
-        // Connect wallet and deploy contract
         await web3Service.connectWallet();
         const contractAddress = await web3Service.deployPropertyContract(
           crypto.randomUUID(),
@@ -69,7 +73,6 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
           values.address
         );
 
-        // Save property with contract address and owner information
         const { data, error } = await supabase
           .from('properties')
           .insert({
@@ -108,95 +111,122 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
     },
   });
 
-  async function onSubmit(values: PropertyFormValues) {
-    addPropertyMutation.mutate(values);
-  }
+  const onSubmit = (values: PropertyFormValues) => {
+    setShowConfirmDialog(true);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New Property</DialogTitle>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter property title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter property address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="ownerName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Owner Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter owner's name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="ownerEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Owner Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="Enter owner's email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="ownerPhone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Owner Phone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter owner's phone number" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={addPropertyMutation.isPending || isDeploying}
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Property</DialogTitle>
+            <DialogDescription>
+              Enter the property details below. This will create a new smart contract.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter property title" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter property address" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="ownerName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter owner's name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="ownerEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner Email</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="Enter owner's email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="ownerPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Owner Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter owner's phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={addPropertyMutation.isPending || isDeploying}
+              >
+                {isDeploying ? "Deploying Contract..." : 
+                 addPropertyMutation.isPending ? "Adding Property..." : 
+                 "Add Property"}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Property Creation</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action will deploy a new smart contract and create a property record. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowConfirmDialog(false);
+                addPropertyMutation.mutate(form.getValues());
+              }}
             >
-              {isDeploying ? "Deploying Contract..." : 
-               addPropertyMutation.isPending ? "Adding Property..." : 
-               "Add Property"}
-            </Button>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
