@@ -10,13 +10,13 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clipboard, Check, X, Calendar, Wrench } from "lucide-react";
+import { Clipboard, Calendar, Wrench } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import { Database } from "@/integrations/supabase/types";
 
 type MaintenanceRequest = Database["public"]["Tables"]["maintenance_requests"]["Row"] & {
   work_orders: Database["public"]["Tables"]["work_orders"]["Row"][] | null;
-  properties: Database["public"]["Tables"]["properties"]["Row"] | null;
+  properties: Database["public"]["Tables"]["properties"]["Row"];
 };
 
 interface MaintenanceRequestListProps {
@@ -34,7 +34,7 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
         .select(`
           *,
           work_orders (*),
-          properties (*)
+          properties!inner (*)
         `)
         .order('created_at', { ascending: false });
 
@@ -44,7 +44,7 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as MaintenanceRequest[];
+      return data as unknown as MaintenanceRequest[];
     },
   });
 

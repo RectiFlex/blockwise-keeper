@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Building2 } from "lucide-react"; // Fixed Building2 import
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { CreatePropertyModal } from "@/components/properties/CreatePropertyModal";
 

@@ -47,8 +47,14 @@ export class Web3Service {
       
       const contractAddress = await contract.getAddress();
       
-      // Initialize the contract with property details
-      await contract.initialize(propertyId, title, address);
+      // Initialize the contract with property details using a separate transaction
+      const contractInstance = new ethers.Contract(
+        contractAddress,
+        PROPERTY_CONTRACT_ABI,
+        this.signer
+      );
+      
+      await contractInstance.initialize(propertyId, title, address);
 
       return contractAddress;
     } catch (error) {
