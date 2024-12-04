@@ -157,7 +157,10 @@ export type Database = {
           address: string
           created_at: string
           id: string
+          owner_email: string | null
           owner_id: string
+          owner_name: string | null
+          owner_phone: string | null
           smart_contract_address: string | null
           title: string
           updated_at: string
@@ -166,7 +169,10 @@ export type Database = {
           address: string
           created_at?: string
           id?: string
+          owner_email?: string | null
           owner_id: string
+          owner_name?: string | null
+          owner_phone?: string | null
           smart_contract_address?: string | null
           title: string
           updated_at?: string
@@ -175,7 +181,10 @@ export type Database = {
           address?: string
           created_at?: string
           id?: string
+          owner_email?: string | null
           owner_id?: string
+          owner_name?: string | null
+          owner_phone?: string | null
           smart_contract_address?: string | null
           title?: string
           updated_at?: string

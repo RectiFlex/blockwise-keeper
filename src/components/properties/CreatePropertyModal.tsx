@@ -26,6 +26,9 @@ import { Button } from "@/components/ui/button";
 const propertyFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   address: z.string().min(1, "Address is required"),
+  ownerName: z.string().min(1, "Owner name is required"),
+  ownerEmail: z.string().email("Invalid email address"),
+  ownerPhone: z.string().min(1, "Phone number is required"),
 });
 
 type PropertyFormValues = z.infer<typeof propertyFormSchema>;
@@ -45,6 +48,9 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
     defaultValues: {
       title: "",
       address: "",
+      ownerName: "",
+      ownerEmail: "",
+      ownerPhone: "",
     },
   });
 
@@ -63,7 +69,7 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
           values.address
         );
 
-        // Save property with contract address
+        // Save property with contract address and owner information
         const { data, error } = await supabase
           .from('properties')
           .insert({
@@ -71,6 +77,9 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
             address: values.address,
             owner_id: user.id,
             smart_contract_address: contractAddress,
+            owner_name: values.ownerName,
+            owner_email: values.ownerEmail,
+            owner_phone: values.ownerPhone,
           })
           .select()
           .single();
@@ -132,6 +141,45 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
                   <FormLabel>Address</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter property address" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ownerName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Owner Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter owner's name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ownerEmail"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Owner Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="Enter owner's email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="ownerPhone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Owner Phone</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter owner's phone number" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
