@@ -13,7 +13,10 @@ type Property = Database['public']['Tables']['properties']['Row'] & {
   maintenance_requests: { count: number }[];
 };
 
-type DemoProperty = Database['public']['Tables']['demo_properties']['Row'];
+type DemoProperty = Database['public']['Tables']['demo_properties']['Row'] & {
+  owner_id?: string;
+  smart_contract_address?: string | null;
+};
 
 const PropertiesList = () => {
   const { data: userSettings } = useQuery({
@@ -22,14 +25,31 @@ const PropertiesList = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
-      const { data, error } = await supabase
+      // First ensure user settings exist
+      const { data: existingSettings } = await supabase
         .from("user_settings")
         .select("*")
         .eq("user_id", user.id)
         .single();
 
-      if (error && error.code !== "PGRST116") throw error;
-      return data;
+      if (!existingSettings) {
+        // Create default settings if they don't exist
+        const { data: newSettings, error: insertError } = await supabase
+          .from("user_settings")
+          .insert([{
+            user_id: user.id,
+            notification_preferences: {},
+            theme_preferences: {},
+            demo_mode: false
+          }])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        return newSettings;
+      }
+
+      return existingSettings;
     },
   });
 
@@ -42,7 +62,14 @@ const PropertiesList = () => {
           .select('*');
         
         if (error) throw error;
-        return data as DemoProperty[];
+        
+        // Transform demo properties to match regular property structure
+        return (data || []).map(prop => ({
+          ...prop,
+          owner_id: prop.id, // Use the property id as owner_id for demo data
+          smart_contract_address: null,
+          maintenance_requests: [{ count: Math.floor(Math.random() * 10) }]
+        })) as Property[];
       }
 
       const { data, error } = await supabase
@@ -99,7 +126,7 @@ const PropertiesList = () => {
         <PropertyCard
           key={property.id}
           property={property}
-          maintenanceCount={userSettings?.demo_mode ? Math.floor(Math.random() * 10) : (property as Property).maintenance_requests?.[0]?.count || 0}
+          maintenanceCount={property.maintenance_requests?.[0]?.count || 0}
           totalExpenses={expenses?.[property.id] || 0}
         />
       ))}
