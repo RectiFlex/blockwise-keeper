@@ -1,69 +1,182 @@
-# Welcome to your Lovable project
+# BlockFix - Property Management Platform
 
-## Project info
+BlockFix is a modern property management platform that combines traditional property management features with blockchain technology for enhanced security and transparency.
 
-**URL**: https://lovable.dev/projects/b01e14d4-db9c-47b4-8881-99b6bac2fcf4
+## Features
 
-## How can I edit this code?
+### Property Management
+- Property listing and details management
+- Smart contract integration for property ownership verification
+- Property statistics and analytics
+- Detailed property information tracking
 
-There are several ways of editing your application.
+### Maintenance Management
+- Create and track maintenance requests
+- Work order management
+- Contractor assignment and scheduling
+- Real-time status updates
+- AI-powered maintenance request analysis
 
-**Use Lovable**
+### Contractor Management
+- Contractor database
+- Skill and specialty tracking
+- Performance monitoring
+- Scheduling and availability management
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/b01e14d4-db9c-47b4-8881-99b6bac2fcf4) and start prompting.
+### Warranty Management
+- Warranty tracking and documentation
+- Expiration notifications
+- Coverage details
+- AI-powered warranty analysis
 
-Changes made via Lovable will be committed automatically to this repo.
+### Analytics & Reporting
+- Property distribution analytics
+- Maintenance trends
+- Expense tracking
+- Custom report generation
 
-**Use your preferred IDE**
+### Smart Contract Integration
+- Property ownership verification on blockchain
+- Transparent transaction history
+- Secure document storage
+- Integration with Polygon Amoy Testnet
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Technology Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**
+  - React with TypeScript
+  - Vite for build tooling
+  - Tailwind CSS for styling
+  - shadcn/ui for UI components
+  - Tanstack Query for data fetching
+  - React Router for navigation
 
-Follow these steps:
+- **Backend**
+  - Supabase for backend services
+  - PostgreSQL database
+  - Row Level Security (RLS) for data protection
+  - Real-time subscriptions
+  - Edge Functions for serverless computing
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- **Blockchain**
+  - Ethereum/Polygon smart contracts
+  - Web3.js for blockchain interactions
+  - MetaMask integration
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Getting Started
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Prerequisites
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+- Node.js (v18 or higher)
+- npm or yarn package manager
+- MetaMask wallet
+- Polygon Amoy Testnet POL tokens
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd blockfix
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+Create a `.env` file in the root directory and add:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+4. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Blockchain Setup
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Install MetaMask browser extension
+2. Connect to Polygon Amoy Testnet
+3. Get test POL tokens from the Polygon Amoy faucet
 
-**Use GitHub Codespaces**
+## Development Guidelines
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Code Structure
 
-## What technologies are used for this project?
+```
+src/
+  ├── components/     # React components
+  ├── hooks/         # Custom React hooks
+  ├── lib/           # Utility functions
+  ├── pages/         # Page components
+  ├── services/      # Service layer
+  └── types/         # TypeScript type definitions
+```
 
-This project is built with .
+### Key Components
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- `PropertyCard`: Displays property information
+- `MaintenanceRequestForm`: Handles maintenance request creation
+- `ContractorList`: Manages contractor information
+- `DashboardStats`: Shows key statistics
 
-## How can I deploy this project?
+### State Management
 
-Simply open [Lovable](https://lovable.dev/projects/b01e14d4-db9c-47b4-8881-99b6bac2fcf4) and click on Share -> Publish.
+- Tanstack Query for server state
+- React Context for global UI state
+- Local state for component-specific data
 
-## I want to use a custom domain - is that possible?
+## Deployment
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+### Production Build
+
+```bash
+npm run build
+```
+
+### Deployment Options
+
+1. **Lovable Platform**
+   - Click "Share" -> "Publish" in the Lovable interface
+   - Your app will be deployed to a Lovable subdomain
+
+2. **Custom Domain**
+   - Deploy to Netlify or similar platform
+   - Configure custom domain settings
+   - Update environment variables
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## Security
+
+- All data is protected by Supabase RLS policies
+- Smart contracts are deployed on Polygon Amoy Testnet
+- User authentication via Supabase Auth
+- Secure API endpoints with rate limiting
+
+## Support
+
+For support, please:
+1. Check the documentation
+2. Open an issue in the repository
+3. Contact the development team
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Built with [Lovable](https://lovable.dev)
+- UI components from [shadcn/ui](https://ui.shadcn.com)
+- Smart contract infrastructure by [Polygon](https://polygon.technology)
