@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { User } from "lucide-react";
+import { User, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 interface SidebarProfileProps {
   isCollapsed: boolean;
@@ -10,16 +12,38 @@ interface SidebarProfileProps {
 
 export function SidebarProfile({ isCollapsed }: SidebarProfileProps) {
   const [email, setEmail] = useState<string>("");
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>("free");
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setEmail(user.email || "");
+        
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile) {
+          setSubscriptionStatus(profile.subscription_status);
+        }
       }
     }
     getUser();
   }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been successfully signed out.",
+    });
+    navigate("/auth");
+  };
 
   if (!email) return null;
 
@@ -41,9 +65,18 @@ export function SidebarProfile({ isCollapsed }: SidebarProfileProps) {
         </AvatarFallback>
       </Avatar>
       {!isCollapsed && (
-        <div className="flex flex-col">
-          <span className="text-sm font-medium">{email}</span>
-          <span className="text-xs text-gray-400">Manage Account</span>
+        <div className="flex-1">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{email}</span>
+            <span className="text-xs text-gray-400 capitalize">{subscriptionStatus} Plan</span>
+          </div>
+          <button
+            onClick={handleSignOut}
+            className="mt-2 flex items-center gap-2 text-sm text-gray-400 hover:text-gray-300"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </button>
         </div>
       )}
     </div>

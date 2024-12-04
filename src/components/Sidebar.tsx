@@ -8,12 +8,14 @@ import {
   FileText,
   LayoutDashboard,
   Brain,
+  Award,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { SidebarLogo } from "./sidebar/SidebarLogo";
 import { SidebarToggle } from "./sidebar/SidebarToggle";
 import { SidebarProfile } from "./sidebar/SidebarProfile";
+import { supabase } from "@/integrations/supabase/client";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -31,6 +33,24 @@ const bottomMenuItems = [
 export default function Sidebar() {
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMvp, setIsMvp] = useState(false);
+
+  useEffect(() => {
+    const checkSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .single();
+        
+        setIsMvp(profile?.subscription_status === 'mvp');
+      }
+    };
+
+    checkSubscription();
+  }, []);
 
   return (
     <div 
@@ -39,7 +59,19 @@ export default function Sidebar() {
         isCollapsed ? "w-20" : "w-64"
       )}
     >
-      <SidebarLogo isCollapsed={isCollapsed} />
+      <div className="flex items-center justify-between p-4">
+        <SidebarLogo isCollapsed={isCollapsed} />
+        {isMvp && (
+          <div className={cn(
+            "flex items-center gap-2 px-3 py-1 rounded-full bg-yellow-500/10 text-yellow-500",
+            isCollapsed && "hidden"
+          )}>
+            <Award className="h-4 w-4" />
+            <span className="text-sm font-medium">MVP</span>
+          </div>
+        )}
+      </div>
+
       <SidebarToggle 
         isCollapsed={isCollapsed} 
         onToggle={() => setIsCollapsed(!isCollapsed)} 
