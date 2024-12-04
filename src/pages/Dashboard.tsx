@@ -1,4 +1,5 @@
 import { Building2, Wrench, Shield, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const stats = [
   {
