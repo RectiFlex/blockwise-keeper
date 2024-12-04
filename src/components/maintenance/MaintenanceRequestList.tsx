@@ -147,12 +147,13 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
                   <Button variant="ghost" size="icon">
                     <Calendar className="h-4 w-4" />
                   </Button>
-                  {!showWorkOrders && request.status === 'pending' && request.work_orders?.length === 0 && (
+                  {!request.work_orders?.length && request.status === 'pending' && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleConvertToWorkOrder(request.id)}
                       disabled={convertToWorkOrder.isPending}
+                      title="Convert to Work Order"
                     >
                       <Wrench className="h-4 w-4" />
                     </Button>
