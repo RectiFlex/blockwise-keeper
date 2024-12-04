@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Maintenance() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -32,7 +33,18 @@ export default function Maintenance() {
         </Dialog>
       </div>
 
-      <MaintenanceRequestList />
+      <Tabs defaultValue="requests" className="w-full">
+        <TabsList>
+          <TabsTrigger value="requests">Maintenance Requests</TabsTrigger>
+          <TabsTrigger value="work-orders">Work Orders</TabsTrigger>
+        </TabsList>
+        <TabsContent value="requests">
+          <MaintenanceRequestList />
+        </TabsContent>
+        <TabsContent value="work-orders">
+          <MaintenanceRequestList showWorkOrders={true} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

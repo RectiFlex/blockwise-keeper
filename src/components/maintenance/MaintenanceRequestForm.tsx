@@ -6,6 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type MaintenanceRequestFormData = {
   title: string;
@@ -14,13 +22,22 @@ type MaintenanceRequestFormData = {
   property_id: string;
 };
 
-// UUID validation regex pattern
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () => void }) {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<MaintenanceRequestFormData>();
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<MaintenanceRequestFormData>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+
+  // Fetch properties for the dropdown
+  const { data: properties } = useQuery({
+    queryKey: ['properties'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('id, title, address');
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const onSubmit = async (data: MaintenanceRequestFormData) => {
     setIsSubmitting(true);
@@ -95,18 +112,19 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
       </div>
 
       <div>
-        <Label htmlFor="property_id">Property ID (UUID format)</Label>
-        <Input
-          id="property_id"
-          {...register("property_id", { 
-            required: "Property ID is required",
-            pattern: {
-              value: UUID_PATTERN,
-              message: "Please enter a valid UUID format"
-            }
-          })}
-          placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-        />
+        <Label htmlFor="property_id">Property</Label>
+        <Select onValueChange={(value) => setValue('property_id', value)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a property" />
+          </SelectTrigger>
+          <SelectContent>
+            {properties?.map((property) => (
+              <SelectItem key={property.id} value={property.id}>
+                {property.title} - {property.address}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {errors.property_id && (
           <p className="text-sm text-red-500 mt-1">{errors.property_id.message}</p>
         )}

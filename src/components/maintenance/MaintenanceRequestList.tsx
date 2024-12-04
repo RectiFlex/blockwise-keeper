@@ -16,22 +16,33 @@ import { Database } from "@/integrations/supabase/types";
 
 type MaintenanceRequest = Database["public"]["Tables"]["maintenance_requests"]["Row"] & {
   work_orders: Database["public"]["Tables"]["work_orders"]["Row"][] | null;
+  properties: Database["public"]["Tables"]["properties"]["Row"] | null;
 };
 
-export default function MaintenanceRequestList() {
+interface MaintenanceRequestListProps {
+  showWorkOrders?: boolean;
+}
+
+export default function MaintenanceRequestList({ showWorkOrders = false }: MaintenanceRequestListProps) {
   const queryClient = useQueryClient();
 
   const { data: requests, isLoading } = useQuery({
-    queryKey: ['maintenance-requests'],
+    queryKey: ['maintenance-requests', { workOrders: showWorkOrders }],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('maintenance_requests')
         .select(`
           *,
-          work_orders (*)
+          work_orders (*),
+          properties (*)
         `)
         .order('created_at', { ascending: false });
 
+      if (showWorkOrders) {
+        query = query.not('work_orders', 'is', null);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as MaintenanceRequest[];
     },
@@ -105,6 +116,7 @@ export default function MaintenanceRequestList() {
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
+            <TableHead>Property</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Priority</TableHead>
             <TableHead>Created</TableHead>
@@ -115,6 +127,7 @@ export default function MaintenanceRequestList() {
           {requests?.map((request) => (
             <TableRow key={request.id}>
               <TableCell className="font-medium">{request.title}</TableCell>
+              <TableCell>{request.properties?.title}</TableCell>
               <TableCell>
                 <Badge className={getStatusColor(request.status || '')}>
                   {request.status}
@@ -134,7 +147,7 @@ export default function MaintenanceRequestList() {
                   <Button variant="ghost" size="icon">
                     <Calendar className="h-4 w-4" />
                   </Button>
-                  {request.status === 'pending' && request.work_orders?.length === 0 && (
+                  {!showWorkOrders && request.status === 'pending' && request.work_orders?.length === 0 && (
                     <Button
                       variant="ghost"
                       size="icon"
