@@ -104,6 +104,7 @@ export class Web3Service {
         throw new Error('Please switch to Polygon Amoy Testnet in MetaMask');
       }
 
+      // Create contract factory with gas settings
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
@@ -111,7 +112,20 @@ export class Web3Service {
       );
 
       logger.info('Deploying contract to Polygon Amoy...');
-      const contract = await factory.deploy();
+      
+      // Get the current gas price
+      const gasPrice = await this.provider.getFeeData();
+      
+      // Deploy with explicit gas settings
+      const deployTransaction = await factory.getDeployTransaction();
+      const estimatedGas = await this.provider.estimateGas(deployTransaction);
+      
+      const contract = await factory.deploy({
+        gasLimit: estimatedGas * BigInt(120) / BigInt(100), // Add 20% buffer
+        maxFeePerGas: gasPrice.maxFeePerGas,
+        maxPriorityFeePerGas: gasPrice.maxPriorityFeePerGas,
+      });
+
       logger.info('Waiting for deployment transaction...');
       await contract.waitForDeployment();
       
@@ -126,8 +140,10 @@ export class Web3Service {
       );
       
       logger.info('Initializing contract...');
-      const tx = await contractInstance.initialize(propertyId, title, address);
-      await tx.wait();
+      const initTx = await contractInstance.initialize(propertyId, title, address, {
+        gasLimit: BigInt(500000), // Explicit gas limit for initialization
+      });
+      await initTx.wait();
       logger.info('Contract initialized on Polygon Amoy');
 
       return contractAddress;
