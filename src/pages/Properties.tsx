@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PropertyCard } from "@/components/properties/PropertyCard";
@@ -8,10 +8,20 @@ import { Plus } from "lucide-react";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { LoadingState } from "@/components/ui/loading-state";
 
-export default function Properties() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+// Define types for better type safety
+type Property = Database['public']['Tables']['properties']['Row'] & {
+  maintenance_requests: { count: number }[];
+};
 
-  const { data: properties, isLoading, error } = useQuery({
+type PropertyExpense = {
+  maintenance_request: {
+    property_id: string;
+    work_orders: { actual_cost: number | null }[];
+  };
+};
+
+const PropertiesList = () => {
+  const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -19,8 +29,9 @@ export default function Properties() {
         .select('*, maintenance_requests(count)');
       
       if (error) throw error;
-      return data;
+      return data as Property[];
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   const { data: expenses } = useQuery({
@@ -36,27 +47,40 @@ export default function Properties() {
       if (error) throw error;
       
       // Calculate total expenses per property
-      const expensesByProperty = data.reduce((acc: Record<string, number>, request) => {
-        const propertyId = request.property_id;
-        const costs = request.work_orders?.reduce((sum: number, order: any) => {
+      const expensesByProperty = (data || []).reduce((acc: Record<string, number>, request) => {
+        if (!request.property_id) return acc;
+        
+        const costs = request.work_orders?.reduce((sum: number, order) => {
           return sum + (order.actual_cost || 0);
         }, 0) || 0;
         
-        acc[propertyId] = (acc[propertyId] || 0) + costs;
+        acc[request.property_id] = (acc[request.property_id] || 0) + costs;
         return acc;
       }, {});
       
       return expensesByProperty;
     },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  if (error) {
-    throw error; // This will be caught by the ErrorBoundary
-  }
+  if (!properties) return null;
 
-  if (isLoading) {
-    return <LoadingState message="Loading properties..." />;
-  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {properties.map((property) => (
+        <PropertyCard
+          key={property.id}
+          property={property}
+          maintenanceCount={property.maintenance_requests?.[0]?.count || 0}
+          totalExpenses={expenses?.[property.id] || 0}
+        />
+      ))}
+    </div>
+  );
+};
+
+export default function Properties() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   return (
     <ErrorBoundary>
@@ -74,16 +98,9 @@ export default function Properties() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties?.map((property) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              maintenanceCount={property.maintenance_requests?.[0]?.count || 0}
-              totalExpenses={expenses?.[property.id] || 0}
-            />
-          ))}
-        </div>
+        <Suspense fallback={<LoadingState message="Loading properties..." />}>
+          <PropertiesList />
+        </Suspense>
 
         <CreatePropertyModal
           open={isCreateModalOpen}
