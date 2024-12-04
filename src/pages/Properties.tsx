@@ -25,23 +25,25 @@ const PropertiesList = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user found");
 
-      // First ensure user settings exist
-      const { data: existingSettings } = await supabase
+      // First check if settings exist
+      const { data: existingSettings, error: fetchError } = await supabase
         .from("user_settings")
         .select("*")
         .eq("user_id", user.id)
         .single();
 
-      if (!existingSettings) {
+      if (fetchError && fetchError.code === 'PGRST116') {
         // Create default settings if they don't exist
+        const defaultSettings = {
+          user_id: user.id,
+          notification_preferences: {},
+          theme_preferences: {},
+          demo_mode: false
+        };
+
         const { data: newSettings, error: insertError } = await supabase
           .from("user_settings")
-          .insert([{
-            user_id: user.id,
-            notification_preferences: {},
-            theme_preferences: {},
-            demo_mode: false
-          }])
+          .insert([defaultSettings])
           .select()
           .single();
 
@@ -49,6 +51,7 @@ const PropertiesList = () => {
         return newSettings;
       }
 
+      if (fetchError) throw fetchError;
       return existingSettings;
     },
   });
@@ -148,7 +151,26 @@ export default function Properties() {
         .eq("user_id", user.id)
         .single();
 
-      if (error && error.code !== "PGRST116") throw error;
+      if (error && error.code === 'PGRST116') {
+        // Create default settings if they don't exist
+        const defaultSettings = {
+          user_id: user.id,
+          notification_preferences: {},
+          theme_preferences: {},
+          demo_mode: false
+        };
+
+        const { data: newSettings, error: insertError } = await supabase
+          .from("user_settings")
+          .insert([defaultSettings])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        return newSettings;
+      }
+
+      if (error) throw error;
       return data;
     },
   });
