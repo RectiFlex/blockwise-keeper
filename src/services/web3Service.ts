@@ -61,8 +61,8 @@ export class Web3Service {
                 chainId: `0x${AMOY_CHAIN_ID.toString(16)}`,
                 chainName: 'Polygon Amoy Testnet',
                 nativeCurrency: {
-                  name: 'MATIC',
-                  symbol: 'MATIC',
+                  name: 'POL',
+                  symbol: 'POL',
                   decimals: 18,
                 },
                 rpcUrls: [AMOY_RPC_URL],
@@ -80,7 +80,7 @@ export class Web3Service {
       return await this.signer.getAddress();
     } catch (error: any) {
       logger.error('Error connecting wallet:', { error: error.message });
-      throw new Error(error.message || 'Failed to connect wallet. Please make sure MetaMask is installed and unlocked.');
+      throw new Error(error.message || 'Failed to connect wallet. Please make sure MetaMask is installed and you have POL tokens.');
     }
   }
 
@@ -104,7 +104,14 @@ export class Web3Service {
         throw new Error('Please switch to Polygon Amoy Testnet in MetaMask');
       }
 
+      // Check POL balance
+      const balance = await this.provider.getBalance(await this.signer.getAddress());
+      if (balance === BigInt(0)) {
+        throw new Error('Insufficient POL tokens. Please get POL tokens from the Polygon Amoy faucet before deploying contracts.');
+      }
+
       logger.info('Starting contract deployment process...');
+      logger.info('Current POL balance:', { balance: balance.toString() });
       
       // Create contract factory
       const factory = new ethers.ContractFactory(
@@ -129,6 +136,18 @@ export class Web3Service {
       const baseGasLimit = BigInt(3000000); // Set a base gas limit
       const gasBuffer = BigInt(500000);  // Add buffer for safety
       const totalGasLimit = baseGasLimit + gasBuffer;
+
+      // Calculate total cost in POL
+      const maxGasCost = totalGasLimit * (feeData.maxFeePerGas || BigInt(0));
+      logger.info('Estimated maximum deployment cost in POL:', {
+        maxGasCost: ethers.formatEther(maxGasCost),
+        totalGasLimit: totalGasLimit.toString()
+      });
+
+      // Verify sufficient balance
+      if (balance < maxGasCost) {
+        throw new Error(`Insufficient POL balance. You need at least ${ethers.formatEther(maxGasCost)} POL for this transaction.`);
+      }
 
       logger.info('Deploying contract with parameters:', {
         gasLimit: totalGasLimit.toString(),
