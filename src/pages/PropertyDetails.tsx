@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Calendar, FileContract, Shield, History } from "lucide-react";
+import { Building2, Calendar, FileText, Shield, History } from "lucide-react";
 
 export default function PropertyDetails() {
   const { id } = useParams();
@@ -87,7 +87,7 @@ export default function PropertyDetails() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileContract className="h-5 w-5" />
+              <FileText className="h-5 w-5" />
               Smart Contract Details
             </CardTitle>
           </CardHeader>
