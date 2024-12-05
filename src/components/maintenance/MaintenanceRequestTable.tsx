@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clipboard, Calendar, Wrench, Brain } from "lucide-react";
+import { Clipboard, Calendar, Wrench, Brain, Clock } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 
 type MaintenanceRequest = Database["public"]["Tables"]["maintenance_requests"]["Row"] & {
@@ -20,16 +20,20 @@ interface MaintenanceRequestTableProps {
   requests: MaintenanceRequest[] | undefined;
   onConvertToWorkOrder: (requestId: string) => void;
   onAnalyzeRequest: (requestId: string) => void;
+  onAnalyzeScheduling: (requestId: string) => void;
   isConverting: boolean;
   isAnalyzing: boolean;
+  isAnalyzingSchedule: boolean;
 }
 
 export function MaintenanceRequestTable({
   requests,
   onConvertToWorkOrder,
   onAnalyzeRequest,
+  onAnalyzeScheduling,
   isConverting,
   isAnalyzing,
+  isAnalyzingSchedule,
 }: MaintenanceRequestTableProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -100,6 +104,15 @@ export function MaintenanceRequestTable({
                         title="Analyze with AI"
                       >
                         <Brain className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => onAnalyzeScheduling(request.id)}
+                        disabled={isAnalyzingSchedule}
+                        title="AI Scheduling Analysis"
+                      >
+                        <Clock className="h-4 w-4" />
                       </Button>
                     </>
                   )}

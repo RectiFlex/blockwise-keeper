@@ -4,6 +4,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useState } from "react";
 import { MaintenanceRequestTable } from "./MaintenanceRequestTable";
 import { AIAnalysisDialog } from "./AIAnalysisDialog";
+import { AISchedulingDialog } from "./AISchedulingDialog";
 import { Database } from "@/integrations/supabase/types";
 
 type MaintenanceRequest = Database["public"]["Tables"]["maintenance_requests"]["Row"] & {
@@ -20,6 +21,8 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [schedulingAnalysis, setSchedulingAnalysis] = useState<string | null>(null);
+  const [isAnalyzingSchedule, setIsAnalyzingSchedule] = useState(false);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['maintenance-requests', { workOrders: showWorkOrders }],
@@ -88,17 +91,11 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
     setIsAnalyzing(true);
     setSelectedRequestId(requestId);
     try {
-      const response = await fetch('/functions/v1/analyze-maintenance-request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ requestId }),
+      const response = await supabase.functions.invoke('analyze-maintenance-request', {
+        body: { requestId },
       });
-
-      const data = await response.json();
-      setAiAnalysis(data.analysis);
+      if (response.error) throw response.error;
+      setAiAnalysis(response.data.analysis);
     } catch (error) {
       console.error('Error analyzing request:', error);
       toast({
@@ -108,6 +105,27 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
       });
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const analyzeScheduling = async (requestId: string) => {
+    setIsAnalyzingSchedule(true);
+    setSelectedRequestId(requestId);
+    try {
+      const response = await supabase.functions.invoke('analyze-scheduling', {
+        body: { requestId },
+      });
+      if (response.error) throw response.error;
+      setSchedulingAnalysis(response.data.analysis);
+    } catch (error) {
+      console.error('Error analyzing scheduling:', error);
+      toast({
+        title: "Error",
+        description: "Failed to analyze scheduling options",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzingSchedule(false);
     }
   };
 
@@ -121,15 +139,24 @@ export default function MaintenanceRequestList({ showWorkOrders = false }: Maint
         requests={requests}
         onConvertToWorkOrder={(requestId) => convertToWorkOrder.mutate(requestId)}
         onAnalyzeRequest={analyzeRequest}
+        onAnalyzeScheduling={analyzeScheduling}
         isConverting={convertToWorkOrder.isPending}
         isAnalyzing={isAnalyzing}
+        isAnalyzingSchedule={isAnalyzingSchedule}
       />
 
       <AIAnalysisDialog
-        isOpen={!!selectedRequestId}
+        isOpen={!!selectedRequestId && !!aiAnalysis}
         onOpenChange={() => setSelectedRequestId(null)}
         analysis={aiAnalysis}
         isAnalyzing={isAnalyzing}
+      />
+
+      <AISchedulingDialog
+        isOpen={!!selectedRequestId && !!schedulingAnalysis}
+        onOpenChange={() => setSelectedRequestId(null)}
+        analysis={schedulingAnalysis}
+        isAnalyzing={isAnalyzingSchedule}
       />
     </>
   );
