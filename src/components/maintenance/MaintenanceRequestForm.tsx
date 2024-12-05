@@ -16,6 +16,7 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LoadingState } from "@/components/ui/loading-state";
 
 const formSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -37,7 +38,7 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
   });
 
   // Fetch properties for the dropdown
-  const { data: properties } = useQuery({
+  const { data: properties, isLoading: isLoadingProperties, error: propertiesError } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -48,7 +49,15 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
         .select('id, title, address')
         .eq('owner_id', user.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching properties:', error);
+        throw error;
+      }
+
+      if (!data || data.length === 0) {
+        return [];
+      }
+
       return data;
     },
   });
@@ -58,6 +67,18 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
+
+      // Verify the property exists and belongs to the user
+      const { data: propertyCheck, error: propertyError } = await supabase
+        .from('properties')
+        .select('id')
+        .eq('id', formData.property_id)
+        .eq('owner_id', user.id)
+        .single();
+
+      if (propertyError || !propertyCheck) {
+        throw new Error("Selected property not found or access denied");
+      }
 
       const { error } = await supabase
         .from('maintenance_requests')
@@ -82,13 +103,33 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
       console.error('Submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to submit maintenance request. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to submit maintenance request. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoadingProperties) {
+    return <LoadingState message="Loading properties..." />;
+  }
+
+  if (propertiesError) {
+    return (
+      <div className="text-center p-4">
+        <p className="text-red-500">Error loading properties. Please try again later.</p>
+      </div>
+    );
+  }
+
+  if (!properties || properties.length === 0) {
+    return (
+      <div className="text-center p-4">
+        <p className="text-muted-foreground">No properties found. Please add a property first.</p>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
@@ -161,7 +202,7 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {properties?.map((property) => (
+                  {properties.map((property) => (
                     <SelectItem key={property.id} value={property.id}>
                       {property.title} - {property.address}
                     </SelectItem>
