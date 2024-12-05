@@ -36,7 +36,7 @@ export class DeploymentService {
         balance: balance.toString()
       });
 
-      // Create contract factory with the new ABI and bytecode
+      // Create contract factory
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
@@ -49,7 +49,7 @@ export class DeploymentService {
         throw new Error('Could not estimate gas fees');
       }
 
-      // Deploy with constructor arguments
+      // Deploy contract
       const contract = await factory.deploy({
         maxFeePerGas: feeData.maxFeePerGas * BigInt(12) / BigInt(10), // Add 20% buffer
         maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
@@ -59,11 +59,19 @@ export class DeploymentService {
       logger.info('Waiting for deployment transaction...');
       await contract.waitForDeployment();
       
+      const contractAddress = await contract.getAddress();
+      
+      // Get contract instance with the deployed address
+      const deployedContract = new ethers.Contract(
+        contractAddress,
+        PROPERTY_CONTRACT_ABI,
+        signer
+      );
+      
       // Register the property after deployment
-      const tx = await contract.registerProperty(title, address);
+      const tx = await deployedContract.registerProperty(title, address);
       await tx.wait();
       
-      const contractAddress = await contract.getAddress();
       logger.info('Contract deployed and property registered successfully:', { 
         contractAddress,
         propertyId,
