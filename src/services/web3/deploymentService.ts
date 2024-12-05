@@ -43,17 +43,27 @@ export class DeploymentService {
         signer
       );
 
-      // Get current gas price
+      // Get current gas price with safety margins
       const feeData = await provider.getFeeData();
       if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
         throw new Error('Could not estimate gas fees');
       }
 
-      // Deploy contract
+      // Add a larger buffer for gas estimation
+      const maxFeePerGas = feeData.maxFeePerGas * BigInt(15) / BigInt(10); // 50% buffer
+      const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas * BigInt(12) / BigInt(10); // 20% buffer
+
+      logger.info('Deploying contract with gas parameters:', {
+        maxFeePerGas: maxFeePerGas.toString(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+        gasLimit: '3000000'
+      });
+
+      // Deploy contract with adjusted gas parameters
       const contract = await factory.deploy({
-        maxFeePerGas: feeData.maxFeePerGas * BigInt(12) / BigInt(10), // Add 20% buffer
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-        gasLimit: BigInt(3000000), // Set a reasonable gas limit
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        gasLimit: BigInt(3000000), // Fixed gas limit
       });
 
       logger.info('Waiting for deployment transaction...');
@@ -94,6 +104,8 @@ export class DeploymentService {
         throw new Error('Transaction was rejected. Please try again and confirm the transaction in MetaMask.');
       } else if (error.code === 'NETWORK_ERROR') {
         throw new Error('Network connection error. Please check your internet connection and try again.');
+      } else if (error.code === -32603) {
+        throw new Error('Transaction failed. Please try again with a higher gas limit or wait for network congestion to decrease.');
       }
 
       throw new Error(`Failed to deploy property contract: ${error.message}`);
