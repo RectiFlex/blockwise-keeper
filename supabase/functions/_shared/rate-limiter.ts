@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const RATE_LIMIT_INTERVAL = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 10; // Maximum requests per interval
