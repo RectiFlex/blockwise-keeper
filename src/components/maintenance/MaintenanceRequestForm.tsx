@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,14 +51,15 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
   const onSubmit = async (data: MaintenanceRequestFormData) => {
     setIsSubmitting(true);
     try {
+      const user = (await supabase.auth.getUser()).data.user;
+      if (!user) throw new Error("User not authenticated");
+
       const { error } = await supabase
         .from('maintenance_requests')
-        .insert([
-          {
-            ...data,
-            requester_id: (await supabase.auth.getUser()).data.user?.id,
-          }
-        ]);
+        .insert({
+          ...data,
+          requester_id: user.id,
+        });
 
       if (error) throw error;
 
