@@ -13,7 +13,6 @@ export class DeploymentService {
       const provider = await providerService.getProvider();
       const signer = await providerService.getSigner();
 
-      // Log initial deployment attempt
       logger.info('Initializing contract deployment...', {
         propertyId,
         title,
@@ -37,55 +36,28 @@ export class DeploymentService {
         balance: balance.toString()
       });
 
-      // Create contract factory with proper parameter encoding
+      // Create contract factory
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
         signer
       );
 
-      // Encode constructor parameters
-      const encodedParams = factory.interface.encodeDeploy([
-        propertyId,
-        title,
-        address
-      ]);
-
-      logger.info('Encoded constructor parameters:', {
-        encodedParams
-      });
-
-      // Get current gas price with safety margins
+      // Get current gas price
       const feeData = await provider.getFeeData();
       if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
         throw new Error('Could not estimate gas fees');
       }
 
-      // Create deployment transaction
-      const deployTx = {
-        data: PROPERTY_BYTECODE + encodedParams.slice(2),
-        maxFeePerGas: feeData.maxFeePerGas * BigInt(12) / BigInt(10), // Add 20% buffer
-        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-      };
-
-      // Estimate gas with the complete transaction
-      const gasEstimate = await provider.estimateGas(deployTx);
-
-      logger.info('Deploying contract with parameters:', {
-        gasLimit: gasEstimate.toString(),
-        maxFeePerGas: deployTx.maxFeePerGas.toString(),
-        maxPriorityFeePerGas: deployTx.maxPriorityFeePerGas.toString()
-      });
-
-      // Deploy the contract with estimated parameters
+      // Deploy with explicit gas settings and constructor arguments
       const contract = await factory.deploy(
         propertyId,
         title,
         address,
         {
-          gasLimit: gasEstimate * BigInt(12) / BigInt(10), // Add 20% buffer
-          maxFeePerGas: deployTx.maxFeePerGas,
-          maxPriorityFeePerGas: deployTx.maxPriorityFeePerGas,
+          maxFeePerGas: feeData.maxFeePerGas * BigInt(12) / BigInt(10), // Add 20% buffer
+          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+          gasLimit: BigInt(3000000), // Set a reasonable gas limit
         }
       );
 
@@ -112,7 +84,6 @@ export class DeploymentService {
         throw new Error('Network connection error. Please check your internet connection and try again.');
       }
 
-      // Provide more context for deployment failures
       throw new Error(`Failed to deploy property contract: ${error.message}. Please ensure you have sufficient POL tokens and are connected to Polygon Amoy Testnet.`);
     }
   }
