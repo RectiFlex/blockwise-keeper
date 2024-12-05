@@ -40,9 +40,14 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
   const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
         .from('properties')
-        .select('id, title, address');
+        .select('id, title, address')
+        .eq('owner_id', user.id);
+      
       if (error) throw error;
       return data;
     },
@@ -51,14 +56,18 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
   const onSubmit = async (data: MaintenanceRequestFormData) => {
     setIsSubmitting(true);
     try {
-      const user = (await supabase.auth.getUser()).data.user;
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       const { error } = await supabase
         .from('maintenance_requests')
         .insert({
-          ...data,
+          title: data.title,
+          description: data.description,
+          priority: data.priority,
+          property_id: data.property_id,
           requester_id: user.id,
+          status: 'pending'
         });
 
       if (error) throw error;
@@ -73,7 +82,7 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
       console.error('Submission error:', error);
       toast({
         title: "Error",
-        description: "Failed to submit maintenance request. Please ensure all fields are valid.",
+        description: "Failed to submit maintenance request. Please try again.",
         variant: "destructive",
       });
     } finally {
