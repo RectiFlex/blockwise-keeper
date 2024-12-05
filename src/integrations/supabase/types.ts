@@ -486,6 +486,7 @@ export type Database = {
     }
     Enums: {
       maintenance_status: "pending" | "in_progress" | "completed" | "cancelled"
+      warranty_status: "active" | "expired" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
