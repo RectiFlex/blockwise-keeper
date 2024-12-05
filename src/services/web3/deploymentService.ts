@@ -36,7 +36,7 @@ export class DeploymentService {
         balance: balance.toString()
       });
 
-      // Create contract factory
+      // Create contract factory with the new ABI and bytecode
       const factory = new ethers.ContractFactory(
         PROPERTY_CONTRACT_ABI,
         PROPERTY_BYTECODE,
@@ -49,23 +49,27 @@ export class DeploymentService {
         throw new Error('Could not estimate gas fees');
       }
 
-      // Deploy with explicit gas settings and constructor arguments
-      const contract = await factory.deploy(
-        propertyId,
-        title,
-        address,
-        {
-          maxFeePerGas: feeData.maxFeePerGas * BigInt(12) / BigInt(10), // Add 20% buffer
-          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
-          gasLimit: BigInt(3000000), // Set a reasonable gas limit
-        }
-      );
+      // Deploy with constructor arguments
+      const contract = await factory.deploy({
+        maxFeePerGas: feeData.maxFeePerGas * BigInt(12) / BigInt(10), // Add 20% buffer
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+        gasLimit: BigInt(3000000), // Set a reasonable gas limit
+      });
 
       logger.info('Waiting for deployment transaction...');
       await contract.waitForDeployment();
       
+      // Register the property after deployment
+      const tx = await contract.registerProperty(title, address);
+      await tx.wait();
+      
       const contractAddress = await contract.getAddress();
-      logger.info('Contract deployed successfully:', { contractAddress });
+      logger.info('Contract deployed and property registered successfully:', { 
+        contractAddress,
+        propertyId,
+        title,
+        address
+      });
 
       return contractAddress;
     } catch (error: any) {
@@ -84,7 +88,7 @@ export class DeploymentService {
         throw new Error('Network connection error. Please check your internet connection and try again.');
       }
 
-      throw new Error(`Failed to deploy property contract: ${error.message}. Please ensure you have sufficient POL tokens and are connected to Polygon Amoy Testnet.`);
+      throw new Error(`Failed to deploy property contract: ${error.message}`);
     }
   }
 }
