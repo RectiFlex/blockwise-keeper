@@ -53,7 +53,7 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
     },
   });
 
-  const onSubmit = async (data: MaintenanceRequestFormData) => {
+  const onSubmit = async (formData: MaintenanceRequestFormData) => {
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -62,10 +62,10 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
       const { error } = await supabase
         .from('maintenance_requests')
         .insert({
-          title: data.title,
-          description: data.description,
-          priority: data.priority,
-          property_id: data.property_id,
+          title: formData.title,
+          description: formData.description,
+          priority: formData.priority,
+          property_id: formData.property_id,
           requester_id: user.id,
           status: 'pending'
         });
