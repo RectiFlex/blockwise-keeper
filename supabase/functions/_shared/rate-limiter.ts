@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 const RATE_LIMIT_INTERVAL = 60 * 1000; // 1 minute
 const MAX_REQUESTS = 10; // Maximum requests per interval
 
-export async function checkRateLimit(userId: string, functionName: string) {
+export async function checkRateLimit(functionName: string, userId: string): Promise<boolean> {
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -27,10 +27,10 @@ export async function checkRateLimit(userId: string, functionName: string) {
     .gte('timestamp', windowStart);
 
   if ((count ?? 0) >= MAX_REQUESTS) {
-    throw new Error('Rate limit exceeded');
+    return false;
   }
 
-  // Log new request
+  // Record new request
   await supabase
     .from('function_rate_limits')
     .insert({
