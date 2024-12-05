@@ -14,18 +14,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-type MaintenanceRequestFormData = {
-  title: string;
-  description: string;
-  priority: string;
-  property_id: string;
-};
+const formSchema = z.object({
+  title: z.string().min(3, "Title must be at least 3 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  priority: z.enum(["low", "medium", "high"]),
+  property_id: z.string().uuid("Please select a property"),
+});
+
+type MaintenanceRequestFormData = z.infer<typeof formSchema>;
 
 export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () => void }) {
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<MaintenanceRequestFormData>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const form = useForm<MaintenanceRequestFormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      priority: "medium",
+    },
+  });
 
   // Fetch properties for the dropdown
   const { data: properties } = useQuery({
@@ -57,7 +67,7 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
         title: "Success",
         description: "Maintenance request submitted successfully",
       });
-      reset();
+      form.reset();
       onSuccess();
     } catch (error) {
       console.error('Submission error:', error);
@@ -72,67 +82,92 @@ export default function MaintenanceRequestForm({ onSuccess }: { onSuccess: () =>
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <Label htmlFor="title">Title</Label>
-        <Input
-          id="title"
-          {...register("title", { required: "Title is required" })}
-          placeholder="Brief description of the issue"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Brief description of the issue" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.title && (
-          <p className="text-sm text-red-500 mt-1">{errors.title.message}</p>
-        )}
-      </div>
 
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          {...register("description", { required: "Description is required" })}
-          placeholder="Detailed description of the maintenance request"
-          className="h-32"
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Detailed description of the maintenance request" 
+                  className="h-32"
+                  {...field} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {errors.description && (
-          <p className="text-sm text-red-500 mt-1">{errors.description.message}</p>
-        )}
-      </div>
 
-      <div>
-        <Label htmlFor="priority">Priority</Label>
-        <select
-          id="priority"
-          {...register("priority")}
-          className="w-full rounded-md border border-input bg-background px-3 py-2"
-        >
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-      </div>
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Priority</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <div>
-        <Label htmlFor="property_id">Property</Label>
-        <Select onValueChange={(value) => setValue('property_id', value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select a property" />
-          </SelectTrigger>
-          <SelectContent>
-            {properties?.map((property) => (
-              <SelectItem key={property.id} value={property.id}>
-                {property.title} - {property.address}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.property_id && (
-          <p className="text-sm text-red-500 mt-1">{errors.property_id.message}</p>
-        )}
-      </div>
+        <FormField
+          control={form.control}
+          name="property_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Property</FormLabel>
+              <Select onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a property" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {properties?.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.title} - {property.address}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Submitting..." : "Submit Request"}
-      </Button>
-    </form>
+        <Button type="submit" disabled={isSubmitting} className="w-full">
+          {isSubmitting ? "Submitting..." : "Submit Request"}
+        </Button>
+      </form>
+    </Form>
   );
 }
