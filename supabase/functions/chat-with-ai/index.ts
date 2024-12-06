@@ -28,9 +28,9 @@ serve(async (req) => {
     const messages = [
       {
         role: 'system',
-        content: `You are an expert AI assistant specializing in Australian property management, 
+        content: `You are an expert AI assistant specializing in property management, 
         maintenance, and statutory warranty requirements. You help property managers understand 
-        and implement best practices while ensuring compliance with Australian regulations.
+        and implement best practices while ensuring compliance with regulations.
         Be concise but thorough in your responses.`
       },
       ...history,
@@ -46,26 +46,52 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages,
+        temperature: 0.7,
+        max_tokens: 500,
       }),
     });
 
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('OpenAI API error:', error);
+      throw new Error('Failed to get response from OpenAI');
+    }
+
     const data = await response.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Unexpected OpenAI response format:', data);
+      throw new Error('Invalid response format from OpenAI');
+    }
+
     console.log('OpenAI response received successfully');
     
     const aiResponse = data.choices[0].message.content;
 
-    return new Response(JSON.stringify({ response: aiResponse }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ response: aiResponse }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   } catch (error) {
     console.error('Error in chat-with-ai function:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      timestamp: new Date().toISOString(),
-      function: 'chat-with-ai'
-    }), {
-      status: error.message === 'Rate limit exceeded. Please try again later.' ? 429 : 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'An unexpected error occurred',
+        timestamp: new Date().toISOString(),
+        function: 'chat-with-ai'
+      }), 
+      {
+        status: error.message === 'Rate limit exceeded. Please try again later.' ? 429 : 500,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        }
+      }
+    );
   }
 });
