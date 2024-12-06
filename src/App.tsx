@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-quer
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { analytics } from "@/lib/analytics";
+import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
@@ -18,7 +19,14 @@ import CompanyOnboarding from "@/components/onboarding/CompanyOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 import "./App.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function PageViewTracker() {
   const location = useLocation();
@@ -31,26 +39,53 @@ function PageViewTracker() {
 }
 
 function RequireCompanySetup() {
-  const { data: profile, isLoading } = useQuery({
+  const { toast } = useToast();
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user found');
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
-      
-      return profile;
-    }
+      try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!user) {
+          console.log("No user found in RequireCompanySetup");
+          return null;
+        }
+        
+        console.log("Fetching profile for user:", user.id);
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Profile fetch error:", profileError);
+          throw profileError;
+        }
+
+        console.log("Profile fetched:", profile);
+        return profile;
+      } catch (error: any) {
+        console.error("Error in profile query:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load profile data. Please try refreshing the page.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+    },
+    retry: 2,
   });
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-screen">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
     </div>;
+  }
+
+  if (error) {
+    return <Navigate to="/auth" replace />;
   }
 
   if (!profile?.company_id) {
