@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,7 +33,6 @@ const formSchema = z.object({
 export default function CompanyOnboarding() {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,32 +47,49 @@ export default function CompanyOnboarding() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setIsLoading(true);
+      console.log("Starting company creation process");
       
       // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
       if (!user) throw new Error("No user found");
 
+      console.log("Creating company");
       // Create company
       const { data: company, error: companyError } = await supabase
         .from("companies")
-        .insert([{ name: values.companyName }])
+        .insert([
+          { 
+            name: values.companyName,
+          }
+        ])
         .select()
         .single();
 
-      if (companyError) throw companyError;
+      if (companyError) {
+        console.error("Company creation error:", companyError);
+        throw companyError;
+      }
 
+      console.log("Creating company settings");
       // Create company settings
       const { error: settingsError } = await supabase
         .from("company_settings")
-        .insert([{
-          company_name: values.companyName,
-          business_address: values.businessAddress,
-          contact_email: values.contactEmail,
-          contact_phone: values.contactPhone,
-        }]);
+        .insert([
+          {
+            company_name: values.companyName,
+            business_address: values.businessAddress,
+            contact_email: values.contactEmail,
+            contact_phone: values.contactPhone,
+          }
+        ]);
 
-      if (settingsError) throw settingsError;
+      if (settingsError) {
+        console.error("Settings creation error:", settingsError);
+        throw settingsError;
+      }
 
+      console.log("Updating user profile");
       // Update user profile with company_id
       const { error: profileError } = await supabase
         .from("profiles")
@@ -84,7 +99,10 @@ export default function CompanyOnboarding() {
         })
         .eq("id", user.id);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+        throw profileError;
+      }
 
       toast({
         title: "Welcome aboard!",
@@ -94,9 +112,10 @@ export default function CompanyOnboarding() {
       // Refresh the page to update the UI
       window.location.reload();
     } catch (error: any) {
+      console.error("Onboarding error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to set up company. Please try again.",
         variant: "destructive",
       });
     } finally {
