@@ -42,7 +42,7 @@ export default function Auth() {
             className="h-12 mx-auto"
           />
           <h2 className="text-3xl font-bold text-foreground">Welcome Back</h2>
-          <p className="text-muted-foreground">Sign in to your account to continue</p>
+          <p className="text-muted-foreground">Sign in with GitHub to continue</p>
         </div>
         
         <SupabaseAuth 
@@ -66,6 +66,8 @@ export default function Auth() {
               label: 'text-foreground',
             }
           }}
+          providers={["github"]}
+          view="sign_in"
         />
       </div>
     </div>
