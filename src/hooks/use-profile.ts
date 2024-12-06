@@ -24,15 +24,36 @@ export function useProfile() {
         const userId = session.user.id;
         console.log("Fetching profile for user:", userId);
         
+        // First fetch the profile
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*, companies(*)')
+          .select('id, subscription_status, subscription_end_date, created_at, updated_at, company_id, role')
           .eq('id', userId)
           .single();
 
         if (profileError) {
           console.error("Profile fetch error:", profileError);
           throw profileError;
+        }
+
+        // If there's a company_id, fetch the company details separately
+        if (profileData.company_id) {
+          const { data: companyData, error: companyError } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('id', profileData.company_id)
+            .single();
+
+          if (companyError) {
+            console.error("Company fetch error:", companyError);
+            throw companyError;
+          }
+
+          // Combine the data
+          return {
+            ...profileData,
+            companies: companyData
+          };
         }
 
         console.log("Profile data fetched successfully:", profileData);
