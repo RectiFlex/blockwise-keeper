@@ -110,7 +110,7 @@ export default function CompanyOnboarding() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Workflow className="h-6 w-6 text-primary" />
-            <CardTitle>Welcome to Property Manager</CardTitle>
+            <CardTitle>Welcome to BlockFix</CardTitle>
           </div>
           <CardDescription>
             Let's get your company set up. Fill in the details below to get started.
