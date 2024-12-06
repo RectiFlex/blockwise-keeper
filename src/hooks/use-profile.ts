@@ -9,19 +9,19 @@ export function useProfile() {
     queryKey: ['profile'],
     queryFn: async () => {
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
           console.error("Session fetch error:", sessionError);
           throw sessionError;
         }
         
-        if (!sessionData.session?.user) {
+        if (!session?.user) {
           console.log("No authenticated user found");
           return null;
         }
 
-        const userId = sessionData.session.user.id;
+        const userId = session.user.id;
         console.log("Fetching profile for user:", userId);
         
         const { data: profileData, error: profileError } = await supabase
