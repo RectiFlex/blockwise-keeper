@@ -1,29 +1,20 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { checkRateLimit, corsHeaders } from "../_shared/rate-limiter.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Get the JWT token from the request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
+    const { messages: history } = await req.json();
+
+    if (!Array.isArray(history)) {
+      throw new Error('Invalid message format');
     }
-
-    const token = authHeader.replace('Bearer ', '');
-    
-    // Check rate limit
-    await checkRateLimit(token, 'chat-with-ai');
-
-    const { message, history } = await req.json();
-
-    console.log(`Processing chat request with message: ${message.substring(0, 50)}...`);
 
     const messages = [
       {
@@ -34,8 +25,9 @@ serve(async (req) => {
         Be concise but thorough in your responses.`
       },
       ...history,
-      { role: 'user', content: message }
     ];
+
+    console.log('Sending request to OpenAI');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -48,18 +40,19 @@ serve(async (req) => {
         messages,
         temperature: 0.7,
         max_tokens: 500,
+        stream: false, // Explicitly disable streaming
       }),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('OpenAI API error:', error);
+      const errorData = await response.text();
+      console.error('OpenAI API error:', errorData);
       throw new Error('Failed to get response from OpenAI');
     }
 
     const data = await response.json();
     
-    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+    if (!data.choices?.[0]?.message?.content) {
       console.error('Unexpected OpenAI response format:', data);
       throw new Error('Invalid response format from OpenAI');
     }
@@ -68,28 +61,32 @@ serve(async (req) => {
     
     const aiResponse = data.choices[0].message.content;
 
-    return new Response(
-      JSON.stringify({ response: aiResponse }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json'
-        }
+    // Ensure we're sending a properly formatted JSON response
+    const responseBody = JSON.stringify({ response: aiResponse });
+    
+    return new Response(responseBody, { 
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
       }
-    );
+    });
+
   } catch (error) {
     console.error('Error in chat-with-ai function:', error);
+    
+    const errorResponse = {
+      error: error.message || 'An unexpected error occurred',
+      timestamp: new Date().toISOString(),
+      function: 'chat-with-ai'
+    };
+
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'An unexpected error occurred',
-        timestamp: new Date().toISOString(),
-        function: 'chat-with-ai'
-      }), 
+      JSON.stringify(errorResponse), 
       {
         status: error.message === 'Rate limit exceeded. Please try again later.' ? 429 : 500,
         headers: { 
           ...corsHeaders, 
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         }
       }
     );
