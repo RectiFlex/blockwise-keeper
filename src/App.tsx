@@ -51,38 +51,21 @@ function RequireCompanySetup() {
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError) {
-          console.error("User fetch error:", userError);
-          throw userError;
-        }
-
-        if (!user) {
-          console.log("No user found in RequireCompanySetup");
-          return null;
-        }
+        if (userError) throw userError;
+        if (!user) return null;
 
         console.log("Fetching profile for user:", user.id);
         
-        // Use maybeSingle to handle cases where profile might not exist
-        const { data, error: profileError } = await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select(`
-            company_id,
-            subscription_status,
-            companies (
-              name
-            )
-          `)
+          .select('*, companies(*)')
           .eq('id', user.id)
           .maybeSingle();
 
-        if (profileError) {
-          console.error("Profile fetch error:", profileError);
-          throw profileError;
-        }
+        if (profileError) throw profileError;
 
-        console.log("Profile fetched:", data);
-        return data;
+        console.log("Profile data fetched:", profileData);
+        return profileData;
       } catch (error: any) {
         console.error("Error in profile query:", error);
         toast({
