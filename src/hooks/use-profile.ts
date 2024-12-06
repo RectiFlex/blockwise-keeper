@@ -11,8 +11,15 @@ export function useProfile() {
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         
-        if (userError) throw userError;
-        if (!user) return null;
+        if (userError) {
+          console.error("User fetch error:", userError);
+          throw userError;
+        }
+        
+        if (!user) {
+          console.log("No user found");
+          return null;
+        }
 
         console.log("Fetching profile for user:", user.id);
         
@@ -20,9 +27,12 @@ export function useProfile() {
           .from('profiles')
           .select('*, companies(*)')
           .eq('id', user.id)
-          .maybeSingle();
+          .single();
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error("Profile fetch error:", profileError);
+          throw profileError;
+        }
 
         console.log("Profile data fetched:", profileData);
         return profileData;
@@ -36,7 +46,9 @@ export function useProfile() {
         throw error;
       }
     },
-    retry: 2,
-    refetchInterval: false,
+    retry: 1,
+    retryDelay: 1000,
+    refetchOnWindowFocus: false,
+    staleTime: 300000, // 5 minutes
   });
 }
