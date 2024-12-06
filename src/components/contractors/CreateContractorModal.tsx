@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import ContractorForm, { ContractorFormValues } from "./ContractorForm";
+import ContractorForm from "./ContractorForm";
 import ConfirmContractorDialog from "./ConfirmContractorDialog";
+import type { ContractorFormValues } from "./ContractorFormSchema";
 
 type Contractor = Database['public']['Tables']['contractors']['Insert'];
 
@@ -24,6 +25,7 @@ export default function CreateContractorModal({
   const { toast } = useToast();
 
   const onSubmit = (data: ContractorFormValues) => {
+    console.log("Data received in CreateContractorModal:", data);
     setFormData(data);
     setShowConfirmDialog(true);
   };
@@ -33,6 +35,7 @@ export default function CreateContractorModal({
     setShowConfirmDialog(false);
     
     try {
+      console.log("Processing contractor data:", formData);
       const contractorData: Contractor = {
         name: formData.name,
         email: formData.email,
@@ -42,6 +45,7 @@ export default function CreateContractorModal({
         hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
       };
 
+      console.log("Submitting to Supabase:", contractorData);
       const { error } = await supabase.from("contractors").insert(contractorData);
 
       if (error) throw error;
@@ -51,7 +55,9 @@ export default function CreateContractorModal({
         description: "Contractor created successfully",
       });
       onSuccess();
+      onOpenChange(false);
     } catch (error: any) {
+      console.error("Error creating contractor:", error);
       toast({
         variant: "destructive",
         title: "Error",
