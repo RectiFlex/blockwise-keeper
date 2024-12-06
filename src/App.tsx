@@ -19,12 +19,14 @@ import CompanyOnboarding from "@/components/onboarding/CompanyOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 import "./App.css";
 
+// Configure the QueryClient with proper settings
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 2,
       refetchOnWindowFocus: false,
-      staleTime: 5000,
+      staleTime: 30000, // Cache data for 30 seconds
+      cacheTime: 3600000, // Keep unused data in cache for 1 hour
     },
   },
 });
@@ -41,27 +43,39 @@ function PageViewTracker() {
 
 function RequireCompanySetup() {
   const { toast } = useToast();
+
+  // Fetch user profile with company information
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
         if (userError) {
           console.error("User fetch error:", userError);
           throw userError;
         }
+
         if (!user) {
           console.log("No user found in RequireCompanySetup");
           return null;
         }
-        
+
         console.log("Fetching profile for user:", user.id);
+        
+        // Use maybeSingle to handle cases where profile might not exist
         const { data, error: profileError } = await supabase
           .from('profiles')
-          .select('company_id')
+          .select(`
+            company_id,
+            subscription_status,
+            companies (
+              name
+            )
+          `)
           .eq('id', user.id)
           .maybeSingle();
-        
+
         if (profileError) {
           console.error("Profile fetch error:", profileError);
           throw profileError;
@@ -80,6 +94,7 @@ function RequireCompanySetup() {
       }
     },
     retry: 2,
+    refetchInterval: false,
   });
 
   if (isLoading) {
