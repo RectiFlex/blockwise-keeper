@@ -43,27 +43,28 @@ export class DeploymentService {
         signer
       );
 
-      // Get current gas price with safety margins
+      // Get current gas price
       const feeData = await provider.getFeeData();
       if (!feeData.maxFeePerGas || !feeData.maxPriorityFeePerGas) {
         throw new Error('Could not estimate gas fees');
       }
 
-      // Add a larger buffer for gas estimation
-      const maxFeePerGas = feeData.maxFeePerGas * BigInt(15) / BigInt(10); // 50% buffer
-      const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas * BigInt(12) / BigInt(10); // 20% buffer
+      // Use higher gas values for Polygon Amoy testnet
+      const maxFeePerGas = BigInt(2000000000); // 2 Gwei
+      const maxPriorityFeePerGas = BigInt(1500000000); // 1.5 Gwei
+      const gasLimit = BigInt(2000000); // 2M gas limit
 
       logger.info('Deploying contract with gas parameters:', {
         maxFeePerGas: maxFeePerGas.toString(),
         maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
-        gasLimit: '3000000'
+        gasLimit: gasLimit.toString()
       });
 
-      // Deploy contract with adjusted gas parameters
+      // Deploy contract with fixed gas parameters
       const contract = await factory.deploy({
         maxFeePerGas,
         maxPriorityFeePerGas,
-        gasLimit: BigInt(3000000), // Fixed gas limit
+        gasLimit,
       });
 
       logger.info('Waiting for deployment transaction...');
