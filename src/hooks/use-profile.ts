@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { logger } from "@/lib/logger";
 
 export function useProfile() {
   const { toast } = useToast();
@@ -9,57 +10,59 @@ export function useProfile() {
     queryKey: ['profile'],
     queryFn: async () => {
       try {
+        // First check if we have a valid session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          console.error("Session fetch error:", sessionError);
+          logger.error("Session error:", { error: sessionError });
+          // Sign out if session is invalid
+          await supabase.auth.signOut();
           throw sessionError;
         }
         
         if (!session?.user) {
-          console.log("No authenticated user found");
+          logger.info("No authenticated user found");
           return null;
         }
 
         const userId = session.user.id;
-        console.log("Fetching profile for user:", userId);
+        logger.info("Fetching profile for user:", { userId });
         
-        // First fetch the profile
-        const { data: profileData, error: profileError } = await supabase
+        // Fetch profile with a simpler query first
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('id, subscription_status, subscription_end_date, created_at, updated_at, company_id, role')
           .eq('id', userId)
           .single();
 
         if (profileError) {
-          console.error("Profile fetch error:", profileError);
+          logger.error("Profile fetch error:", { error: profileError });
           throw profileError;
         }
 
-        // If there's a company_id, fetch the company details separately
-        if (profileData.company_id) {
-          const { data: companyData, error: companyError } = await supabase
+        // If profile has company_id, fetch company details in a separate query
+        if (profile?.company_id) {
+          const { data: company, error: companyError } = await supabase
             .from('companies')
             .select('*')
-            .eq('id', profileData.company_id)
+            .eq('id', profile.company_id)
             .single();
 
           if (companyError) {
-            console.error("Company fetch error:", companyError);
+            logger.error("Company fetch error:", { error: companyError });
             throw companyError;
           }
 
-          // Combine the data
           return {
-            ...profileData,
-            companies: companyData
+            ...profile,
+            company
           };
         }
 
-        console.log("Profile data fetched successfully:", profileData);
-        return profileData;
+        logger.info("Profile data fetched successfully");
+        return profile;
       } catch (error: any) {
-        console.error("Error in profile query:", error);
+        logger.error("Error in profile query:", { error });
         toast({
           title: "Error",
           description: "Failed to load profile data. Please try refreshing the page.",

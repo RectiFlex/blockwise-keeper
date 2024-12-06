@@ -4,6 +4,7 @@ import { useProfile } from "@/hooks/use-profile";
 import CompanyOnboarding from "@/components/onboarding/CompanyOnboarding";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/lib/logger";
 
 export function RequireCompanySetup() {
   const { data: profile, isLoading, error } = useProfile();
@@ -12,12 +13,30 @@ export function RequireCompanySetup() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setHasSession(!!session);
-      setIsCheckingAuth(false);
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          logger.error("Session check error:", { error: sessionError });
+          await supabase.auth.signOut();
+        }
+        setHasSession(!!session);
+      } catch (error) {
+        logger.error("Auth check error:", { error });
+      } finally {
+        setIsCheckingAuth(false);
+      }
     };
     
     checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      logger.info("Auth state changed:", { event });
+      setHasSession(!!session);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (isCheckingAuth || isLoading) {
@@ -25,6 +44,7 @@ export function RequireCompanySetup() {
   }
 
   if (!hasSession || error || !profile) {
+    logger.info("Redirecting to auth:", { hasSession, hasError: !!error, hasProfile: !!profile });
     return <Navigate to="/auth" replace />;
   }
 
