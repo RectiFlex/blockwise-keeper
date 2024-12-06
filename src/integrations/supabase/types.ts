@@ -484,6 +484,25 @@ export type Database = {
       }
     }
     Views: {
+      combined_view: {
+        Row: {
+          active_warranties: number | null
+          amount: number | null
+          category: string | null
+          expired_warranties: number | null
+          month: string | null
+          new_properties_last_month: number | null
+          pending_requests: number | null
+          property_count: number | null
+          property_type: string | null
+          request_count: number | null
+          requests_last_month: number | null
+          total_properties: number | null
+          total_requests: number | null
+          total_warranties: number | null
+        }
+        Relationships: []
+      }
       expense_categories: {
         Row: {
           amount: number | null
@@ -503,6 +522,25 @@ export type Database = {
         Row: {
           month: string | null
           request_count: number | null
+        }
+        Relationships: []
+      }
+      order_items: {
+        Row: {
+          active_warranties: number | null
+          amount: number | null
+          category: string | null
+          expired_warranties: number | null
+          month: string | null
+          new_properties_last_month: number | null
+          pending_requests: number | null
+          property_count: number | null
+          property_type: string | null
+          request_count: number | null
+          requests_last_month: number | null
+          total_properties: number | null
+          total_requests: number | null
+          total_warranties: number | null
         }
         Relationships: []
       }
