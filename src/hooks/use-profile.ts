@@ -9,24 +9,25 @@ export function useProfile() {
     queryKey: ['profile'],
     queryFn: async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        if (userError) {
-          console.error("User fetch error:", userError);
-          throw userError;
+        if (sessionError) {
+          console.error("Session fetch error:", sessionError);
+          throw sessionError;
         }
         
-        if (!user) {
-          console.log("No user found");
+        if (!sessionData.session?.user) {
+          console.log("No authenticated user found");
           return null;
         }
 
-        console.log("Fetching profile for user:", user.id);
+        const userId = sessionData.session.user.id;
+        console.log("Fetching profile for user:", userId);
         
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*, companies(*)')
-          .eq('id', user.id)
+          .eq('id', userId)
           .single();
 
         if (profileError) {
@@ -34,7 +35,7 @@ export function useProfile() {
           throw profileError;
         }
 
-        console.log("Profile data fetched:", profileData);
+        console.log("Profile data fetched successfully:", profileData);
         return profileData;
       } catch (error: any) {
         console.error("Error in profile query:", error);
