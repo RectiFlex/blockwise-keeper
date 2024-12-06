@@ -13,8 +13,8 @@ export default function Auth() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
+      if (session?.user) {
+        navigate("/dashboard", { replace: true });
       }
     };
     
@@ -26,7 +26,7 @@ export default function Auth() {
           title: "Welcome!",
           description: "You have successfully signed in.",
         });
-        navigate("/dashboard");
+        navigate("/dashboard", { replace: true });
       }
     });
 
