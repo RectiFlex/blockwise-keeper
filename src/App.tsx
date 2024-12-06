@@ -1,10 +1,9 @@
 import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation, Outlet, Navigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { analytics } from "@/lib/analytics";
-import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
 import Auth from "@/pages/Auth";
 import Dashboard from "@/pages/Dashboard";
@@ -15,9 +14,7 @@ import Contractors from "@/pages/Contractors";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import AI from "@/pages/AI";
-import CompanyOnboarding from "@/components/onboarding/CompanyOnboarding";
-import { supabase } from "@/integrations/supabase/client";
-import "./App.css";
+import { RequireCompanySetup } from "@/components/auth/RequireCompanySetup";
 
 // Configure the QueryClient with proper settings
 const queryClient = new QueryClient({
@@ -26,7 +23,7 @@ const queryClient = new QueryClient({
       retry: 2,
       refetchOnWindowFocus: false,
       staleTime: 30000, // Cache data for 30 seconds
-      gcTime: 3600000, // Keep unused data in cache for 1 hour (formerly cacheTime)
+      gcTime: 3600000, // Keep unused data in cache for 1 hour
     },
   },
 });
@@ -39,62 +36,6 @@ function PageViewTracker() {
   }, [location]);
 
   return null;
-}
-
-function RequireCompanySetup() {
-  const { toast } = useToast();
-
-  // Fetch user profile with company information
-  const { data: profile, isLoading, error } = useQuery({
-    queryKey: ['profile'],
-    queryFn: async () => {
-      try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        
-        if (userError) throw userError;
-        if (!user) return null;
-
-        console.log("Fetching profile for user:", user.id);
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*, companies(*)')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profileError) throw profileError;
-
-        console.log("Profile data fetched:", profileData);
-        return profileData;
-      } catch (error: any) {
-        console.error("Error in profile query:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load profile data. Please try refreshing the page.",
-          variant: "destructive",
-        });
-        throw error;
-      }
-    },
-    retry: 2,
-    refetchInterval: false,
-  });
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
-  }
-
-  if (error) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (!profile?.company_id) {
-    return <CompanyOnboarding />;
-  }
-
-  return <Outlet />;
 }
 
 function App() {
