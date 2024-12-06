@@ -7,10 +7,29 @@ import DashboardStats from "@/components/dashboard/DashboardStats";
 import MaintenanceTrends from "@/components/dashboard/MaintenanceTrends";
 import PropertyDistribution from "@/components/dashboard/PropertyDistribution";
 import ExpenseCategories from "@/components/dashboard/ExpenseCategories";
+import CompanyOnboarding from "@/components/onboarding/CompanyOnboarding";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
   const [walletAddress, setWalletAddress] = useState<string>("");
   const { toast } = useToast();
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user found');
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*, companies(*)')
+        .eq('id', user.id)
+        .single();
+      
+      return profile;
+    }
+  });
 
   const connectWallet = async () => {
     try {
@@ -28,6 +47,11 @@ export default function Dashboard() {
       });
     }
   };
+
+  // If user doesn't have a company_id, show onboarding
+  if (profile && !profile.company_id) {
+    return <CompanyOnboarding />;
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
