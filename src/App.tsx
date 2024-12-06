@@ -24,6 +24,7 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 5000,
     },
   },
 });
@@ -45,26 +46,29 @@ function RequireCompanySetup() {
     queryFn: async () => {
       try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError) throw userError;
+        if (userError) {
+          console.error("User fetch error:", userError);
+          throw userError;
+        }
         if (!user) {
           console.log("No user found in RequireCompanySetup");
           return null;
         }
         
         console.log("Fetching profile for user:", user.id);
-        const { data: profile, error: profileError } = await supabase
+        const { data, error: profileError } = await supabase
           .from('profiles')
           .select('company_id')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         if (profileError) {
           console.error("Profile fetch error:", profileError);
           throw profileError;
         }
 
-        console.log("Profile fetched:", profile);
-        return profile;
+        console.log("Profile fetched:", data);
+        return data;
       } catch (error: any) {
         console.error("Error in profile query:", error);
         toast({
