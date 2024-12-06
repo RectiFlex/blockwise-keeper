@@ -24,19 +24,108 @@ export const PROPERTY_CONTRACT_ABI = [
     "type": "constructor"
   },
   {
+    "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "propertyId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
         "internalType": "string",
-        "name": "title",
+        "name": "description",
         "type": "string"
       },
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "cost",
+        "type": "uint256"
+      }
+    ],
+    "name": "MaintenanceRecorded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "propertyId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
         "internalType": "string",
-        "name": "location",
+        "name": "propertyAddress",
+        "type": "string"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "PropertyAdded",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "propertyId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "date",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "description",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "cost",
+        "type": "uint256"
+      }
+    ],
+    "name": "addMaintenanceRecord",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "propertyAddress",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "propertyOwner",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "details",
         "type": "string"
       }
     ],
-    "name": "registerProperty",
+    "name": "addProperty",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -49,17 +138,65 @@ export const PROPERTY_CONTRACT_ABI = [
         "type": "uint256"
       }
     ],
-    "name": "getPropertyDetails",
+    "name": "getMaintenanceRecords",
     "outputs": [
       {
-        "internalType": "string",
-        "name": "title",
-        "type": "string"
-      },
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "date",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "cost",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct PropertyManager.Maintenance[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
-        "internalType": "string",
-        "name": "location",
-        "type": "string"
+        "internalType": "uint256",
+        "name": "propertyId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getProperty",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "propertyAddress",
+            "type": "string"
+          },
+          {
+            "internalType": "address",
+            "name": "owner",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "details",
+            "type": "string"
+          }
+        ],
+        "internalType": "struct PropertyManager.Property",
+        "name": "",
+        "type": "tuple"
       }
     ],
     "stateMutability": "view",
@@ -67,5 +204,5 @@ export const PROPERTY_CONTRACT_ABI = [
   }
 ];
 
-// Updated minimal property contract bytecode
-export const PROPERTY_BYTECODE = "0x608060405234801561001057600080fd5b50610559806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c8063c8691b2a1461003b578063f86195cf1461006b575b600080fd5b61005561004936600461027c565b61008b565b60405161006291906102e1565b60405180910390f35b61007e610079366004610394565b610196565b604051610062929190610438565b61009361025a565b600082815481106100a6576100a6610474565b906000526020600020906002020160405180604001604052908160008201805461010590610488565b80601f016020809104026020016040519081016040528092919081815260200182805461013190610488565b801561017e5780601f106101535761010080835404028352916020019161017e565b820191906000526020600020905b81548152906001019060200180831161016157829003601f168201915b5050505050815260200160018201805461019790610488565b905082565b60408051808201909152606081526020810160608152506000805480820182556000919091528251805191926002027fb10e2d527612073b26eecdfd717e6a320cf44b4afac2b0732d9fcbe2b7fa0cf6019081906101f5908390610518565b50602082015180516102119260018501920190610267565b505050604080518082019091526040805180820190915260008082526020820152815260200160408051808201909152600080825260208201528152505090565b604051806040016040528060608152602001606081525090565b82805461027390610488565b90600052602060002090601f01602090048101928261029557600085556102db565b82601f106102ae57805160ff19168380011785556102db565b828001600101855582156102db579182015b828111156102db5782518255916020019190600101906102c0565b506102e792915061030a565b5090565b6020808252825182820181905260009190848201906040850190845b818110156103195783518352928401929184019160010161030a565b50909695505050505050565b634e487b7160e01b600052604160045260246000fd5b600082601f83011261034c57600080fd5b813567ffffffffffffffff8082111561036757610367610325565b604051601f8301601f19908116603f0116810190828211818310171561038f5761038f610325565b816040528381528660208588010111156103a857600080fd5b836020870160208301376000602085830101528094505050505092915050565b600080604083850312156103a757600080fd5b823567ffffffffffffffff8111156103cc57600080fd5b6103d88582860161033b565b925050602083013567ffffffffffffffff8111156103f557600080fd5b6104018582860161033b565b9150509250929050565b600081518084526020808501945080840160005b8381101561043d57815187529582019590820190600101610421565b509495945050505050565b60408152600061044b604083018561040d565b828103602084015261045d818561040d565b95945050505050565b634e487b7160e01b600052603260045260246000fd5b600181811c9082168061049c57607f821691505b602082108114156104bd57634e487b7160e01b600052602260045260246000fd5b50919050565b601f8211156105135760008160011c8201602080861015610504575b601f0160208416600081126104f7575050565b505b6020840193506104e4565b5050565b81516001600160401b0381111561053157610531610325565b6105458161053f84546104f7565b846104c7565b602080601f83116001811461057a57600084156105625750858301515b600019600386901b1c1916600185901b17855561051e565b6000858152602081208601600019600388901b60f8161c191681555b5050505050565b67ffffffffffffffff8111156105a7576105a7610325565b6105b5816105af84546104f7565b846104c7565b602080601f8311600181146105ea57600084156105d25750858301515b600019600386901b1c1916600185901b17855561051e565b6000858152602081208601600019600388901b60f8161c191681555b505050505056fea2646970667358221220f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f564736f6c63430008110033";
+// Contract bytecode generated from the Solidity contract
+export const PROPERTY_BYTECODE = "0x608060405234801561001057600080fd5b50610b0a806100206000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c806309c5eabe146100515780630d80fefd1461006d578063c41c2f24146100a0578063ee3def0e146100b9575b600080fd5b61006b60048036038101906100669190610779565b6100ec565b005b61008760048036038101906100829190610832565b61022b565b6040516100979493929190610934565b60405180910390f35b6100b860048036038101906100b391906109a0565b61035a565b005b6100d360048036038101906100ce9190610832565b610544565b6040516100e3949392919061099a565b60405180910390f35b6000600260008581526020019081526020016000208054905090506040518060600160405280858152602001848152602001838152506002600086815260200190815260200160002082908060018154018082558091505060019003906000526020600020906003020160009091909190915060008201518160000155602082015181600101908051906020019061018092919061064f565b50604082015181600201555050827f8e5f7438802738e3c8a848be958d004a50ea0e534bf2c40a6c4b6c4d524f4453858585856040516101c69493929190610934565b60405180910390a2505050505600a165627a7a72305820a3f0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0029";
