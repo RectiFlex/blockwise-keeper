@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,18 +15,36 @@ interface Message {
 export default function AIChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const savedMessages = localStorage.getItem("chatMessages");
+    if (savedMessages) setMessages(JSON.parse(savedMessages));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chatMessages", JSON.stringify(messages));
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
-      const { data, error } = await supabase.functions.invoke('chat-with-ai', {
-        body: { message, history: messages }
+      const { data, error } = await supabase.functions.invoke("chat-with-ai", {
+        body: { message, history: messages },
       });
-      
-      if (error) throw error;
+      if (error || !data?.response) {
+        throw new Error(error?.message || "No response from server");
+      }
       return data.response;
     },
     onSuccess: (response) => {
-      setMessages(prev => [...prev, { role: "assistant", content: response }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+    },
+    onError: (error: Error) => {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `Error: ${error.message}` },
+      ]);
     },
   });
 
@@ -35,7 +53,7 @@ export default function AIChat() {
     if (!input.trim() || chatMutation.isPending) return;
 
     const userMessage = { role: "user" as const, content: input };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     chatMutation.mutate(input);
   };
@@ -71,6 +89,7 @@ export default function AIChat() {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef}></div>
             </div>
           </ScrollArea>
         </CardContent>
@@ -80,6 +99,7 @@ export default function AIChat() {
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          maxLength={500}
           placeholder="Ask about property management, maintenance, or warranty requirements..."
           disabled={chatMutation.isPending}
         />
