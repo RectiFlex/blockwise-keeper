@@ -3,60 +3,62 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/lib/logger";
 
+// Define types for better type safety
+interface Profile {
+  id: string;
+  subscription_status: string;
+  subscription_end_date: string | null;
+  created_at: string;
+  updated_at: string;
+  company_id: string | null;
+  role: string;
+  company?: Company;
+}
+
+interface Company {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export function useProfile() {
   const { toast } = useToast();
 
-  return useQuery({
-    queryKey: ['profile'],
+  return useQuery<Profile>({
+    queryKey: ["profile"],
     queryFn: async () => {
       try {
-        // First check if we have a valid session
+        // Check if the user has a valid session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          logger.error("Session error:", { error: sessionError });
-          // Sign out if session is invalid
+        if (sessionError || !session?.user) {
+          if (sessionError) logger.error("Session error:", { error: sessionError });
           await supabase.auth.signOut();
-          throw sessionError;
-        }
-        
-        if (!session?.user) {
-          logger.info("No authenticated user found");
-          return null;
+          throw new Error("Session expired. Please log in again.");
         }
 
         const userId = session.user.id;
         logger.info("Fetching profile for user:", { userId });
-        
-        // Fetch profile with a simpler query first
+
+        // Fetch the profile, including company details
         const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, subscription_status, subscription_end_date, created_at, updated_at, company_id, role')
-          .eq('id', userId)
+          .from("profiles")
+          .select(`
+            id,
+            subscription_status,
+            subscription_end_date,
+            created_at,
+            updated_at,
+            company_id,
+            role,
+            companies(id, name, created_at, updated_at)
+          `)
+          .eq("id", userId)
           .single();
 
         if (profileError) {
           logger.error("Profile fetch error:", { error: profileError });
           throw profileError;
-        }
-
-        // If profile has company_id, fetch company details in a separate query
-        if (profile?.company_id) {
-          const { data: company, error: companyError } = await supabase
-            .from('companies')
-            .select('*')
-            .eq('id', profile.company_id)
-            .single();
-
-          if (companyError) {
-            logger.error("Company fetch error:", { error: companyError });
-            throw companyError;
-          }
-
-          return {
-            ...profile,
-            company
-          };
         }
 
         logger.info("Profile data fetched successfully");
@@ -65,13 +67,17 @@ export function useProfile() {
         logger.error("Error in profile query:", { error });
         toast({
           title: "Error",
-          description: "Failed to load profile data. Please try refreshing the page.",
+          description: "Failed to load profile data. Please refresh the page or try again later.",
           variant: "destructive",
         });
         throw error;
       }
     },
-    retry: 1,
+    retry: (failureCount, error: any) => {
+      // Skip retries for authentication errors
+      if (error?.status === 401 || error?.status === 403) return false;
+      return failureCount < 1; // Retry once for other errors
+    },
     retryDelay: 1000,
     refetchOnWindowFocus: false,
     staleTime: 300000, // 5 minutes
