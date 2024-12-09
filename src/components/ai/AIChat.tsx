@@ -30,7 +30,13 @@ export default function AIChat() {
   const chatMutation = useMutation({
     mutationFn: async (message: string) => {
       const { data, error } = await supabase.functions.invoke("chat-with-ai", {
-        body: { message, history: messages },
+        body: { 
+          message,
+          messages: messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        },
       });
       if (error || !data?.response) {
         throw new Error(error?.message || "No response from server");
@@ -38,12 +44,15 @@ export default function AIChat() {
       return data.response;
     },
     onSuccess: (response) => {
-      setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+      setMessages((prev) => [...prev, { 
+        role: "assistant" as const, 
+        content: typeof response === 'string' ? response : JSON.stringify(response) 
+      }]);
     },
     onError: (error: Error) => {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Error: ${error.message}` },
+        { role: "assistant" as const, content: `Error: ${error.message}` },
       ]);
     },
   });

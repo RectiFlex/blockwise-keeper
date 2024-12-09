@@ -50,15 +50,13 @@ export default function AIWarrantyAnalysis() {
       <Card>
         <CardHeader>
           <CardTitle>Warranty Coverage Analysis</CardTitle>
-          <CardDescription>
-            AI-generated insights about your warranty coverage and requirements
-          </CardDescription>
+          <CardDescription>AI-generated insights about your warranty coverage and requirements</CardDescription>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[300px]">
             <div className="space-y-4">
-              {analysis?.coverage?.map((item: string, i: number) => (
-                <p key={i} className="text-sm">{item}</p>
+              {analysis?.coverage?.map((item: any, i: number) => (
+                <p key={i} className="text-sm">{typeof item === 'string' ? item : JSON.stringify(item)}</p>
               )) || <p className="text-sm text-muted-foreground">No coverage analysis available</p>}
             </div>
           </ScrollArea>
@@ -68,15 +66,13 @@ export default function AIWarrantyAnalysis() {
       <Card>
         <CardHeader>
           <CardTitle>Improvement Suggestions</CardTitle>
-          <CardDescription>
-            AI recommendations for better warranty management
-          </CardDescription>
+          <CardDescription>AI recommendations for better warranty management</CardDescription>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[300px]">
             <div className="space-y-4">
-              {analysis?.suggestions?.map((item: string, i: number) => (
-                <p key={i} className="text-sm">{item}</p>
+              {analysis?.suggestions?.map((item: any, i: number) => (
+                <p key={i} className="text-sm">{typeof item === 'string' ? item : JSON.stringify(item)}</p>
               )) || <p className="text-sm text-muted-foreground">No suggestions available</p>}
             </div>
           </ScrollArea>
