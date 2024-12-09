@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Loader2 } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
 
@@ -43,26 +44,61 @@ export default function CompanySettings() {
     },
   });
 
-  const { data: companySettings, isLoading } = useQuery({
+  const { data: companySettings, isLoading, error } = useQuery({
     queryKey: ["companySettings"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) {
+        throw new Error('No company associated with user');
+      }
+
       const { data, error } = await supabase
-        .from("company_settings")
-        .select("*")
-        .maybeSingle();
+        .from('company_settings')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .single();
 
       if (error) throw error;
       return data;
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to load company settings",
+        variant: "destructive"
+      });
+    } // Added missing closing parenthesis here
   });
 
   const mutation = useMutation({
     mutationFn: async (values: CompanyFormValues) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.company_id) {
+        throw new Error('No company associated with user');
+      }
+
       const payload: CompanySettings = {
         company_name: values.company_name,
         business_address: values.business_address || null,
         contact_email: values.contact_email || null,
         contact_phone: values.contact_phone || null,
+        company_id: profile.company_id,
       };
 
       if (companySettings?.id) {
@@ -73,8 +109,8 @@ export default function CompanySettings() {
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("company_settings")
-          .insert(payload);
+          .from('company_settings')
+          .insert([payload]);
         if (error) throw error;
       }
     },
@@ -88,7 +124,7 @@ export default function CompanySettings() {
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to save settings. Please try again.",
+        description: error.message || "Failed to save settings. Please try again.",
         variant: "destructive",
       });
     },
@@ -110,11 +146,7 @@ export default function CompanySettings() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <LoadingState message="Loading company settings..." />;
   }
 
   return (
