@@ -1,46 +1,67 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 import type { WorkOrder } from "@/types/database";
 
 export function useWorkOrders(maintenanceRequestId?: string) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const workOrdersQuery = useQuery({
     queryKey: ['work-orders', maintenanceRequestId],
     queryFn: async () => {
-      const query = supabase
-        .from('work_orders')
-        .select(`
-          *,
-          contractors (*)
-        `);
+      try {
+        const query = supabase
+          .from('work_orders')
+          .select(`
+            *,
+            contractors (*),
+            maintenance_request:maintenance_request_id (
+              *,
+              properties (*)
+            )
+          `);
 
-      if (maintenanceRequestId) {
-        query.eq('maintenance_request_id', maintenanceRequestId);
+        if (maintenanceRequestId) {
+          query.eq('maintenance_request_id', maintenanceRequestId);
+        }
+
+        const { data, error } = await query.order('created_at', { ascending: false });
+        
+        if (error) {
+          throw error;
+        }
+
+        return data as WorkOrder[];
+      } catch (error) {
+        console.error('Error fetching work orders:', error);
+        throw error;
       }
-
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) throw error;
-      return data as WorkOrder[];
     },
-    enabled: !!maintenanceRequestId,
+    staleTime: 1000 * 60, // Cache for 1 minute
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   const createWorkOrder = useMutation({
-    mutationFn: async (workOrder: Partial<WorkOrder>) => {
-      const { data, error } = await supabase
+    mutationFn: async (data: Partial<WorkOrder>) => {
+      const { data: workOrder, error } = await supabase
         .from('work_orders')
         .insert([{
-          ...workOrder,
-          status: 'pending'
+          ...data,
+          status: 'pending',
+          estimated_cost: data.estimated_cost ? parseFloat(data.estimated_cost as string) : null,
         }])
-        .select()
+        .select(`
+          *,
+          contractors (*),
+          maintenance_request:maintenance_request_id (
+            *,
+            properties (*)
+          )
+        `)
         .single();
 
       if (error) throw error;
-      return data;
+      return workOrder;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-orders'] });
@@ -52,9 +73,19 @@ export function useWorkOrders(maintenanceRequestId?: string) {
     mutationFn: async ({ id, ...updates }: Partial<WorkOrder> & { id: string }) => {
       const { data, error } = await supabase
         .from('work_orders')
-        .update(updates)
+        .update({
+          ...updates,
+          estimated_cost: updates.estimated_cost ? parseFloat(updates.estimated_cost as string) : null,
+        })
         .eq('id', id)
-        .select()
+        .select(`
+          *,
+          contractors (*),
+          maintenance_request:maintenance_request_id (
+            *,
+            properties (*)
+          )
+        `)
         .single();
 
       if (error) throw error;

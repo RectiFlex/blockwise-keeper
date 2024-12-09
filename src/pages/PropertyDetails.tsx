@@ -87,7 +87,7 @@ export default function PropertyDetails() {
         </div>
         <Button
           variant="outline"
-          onClick={() => setEditModal(true)}
+          onClick={() => setShowEditModal(true)}
           className="bg-white/[0.03] backdrop-blur-xl border-white/[0.05]"
         >
           <Edit className="h-4 w-4 mr-2" />
@@ -96,7 +96,7 @@ export default function PropertyDetails() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="glass card-gradient border-white/[0.05]">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
@@ -145,7 +145,7 @@ export default function PropertyDetails() {
           </CardContent>
         </Card>
 
-        <Card className="glass card-gradient border-white/[0.05]">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
@@ -171,7 +171,7 @@ export default function PropertyDetails() {
           </CardContent>
         </Card>
 
-        <Card className="col-span-full glass card-gradient border-white/[0.05]">
+        <Card className="col-span-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
