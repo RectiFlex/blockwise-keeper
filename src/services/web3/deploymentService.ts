@@ -28,7 +28,7 @@ export class DeploymentService {
       // Check POL balance
       const balance = await provider.getBalance(await signer.getAddress());
       if (balance === BigInt(0)) {
-        throw new Error('Insufficient POL tokens. Please get POL tokens from the Polygon Amoy faucet.');
+        throw new Error('Insufficient POL tokens. Please get test POL tokens from the Polygon Amoy faucet.');
       }
 
       logger.info('Preparing contract deployment...', {
@@ -50,9 +50,9 @@ export class DeploymentService {
       }
 
       // Use higher gas values for Polygon Amoy testnet
-      const maxFeePerGas = BigInt(2000000000); // 2 Gwei
-      const maxPriorityFeePerGas = BigInt(1500000000); // 1.5 Gwei
-      const gasLimit = BigInt(2000000); // 2M gas limit
+      const maxFeePerGas = BigInt(5000000000); // 5 Gwei
+      const maxPriorityFeePerGas = BigInt(2500000000); // 2.5 Gwei
+      const gasLimit = BigInt(3000000); // 3M gas limit to ensure enough gas for deployment
 
       logger.info('Deploying contract with gas parameters:', {
         maxFeePerGas: maxFeePerGas.toString(),
@@ -102,11 +102,11 @@ export class DeploymentService {
       if (error.message.includes('insufficient funds')) {
         throw new Error('Insufficient POL tokens for deployment. Please get more tokens from the Polygon Amoy faucet.');
       } else if (error.message.includes('user rejected')) {
-        throw new Error('Transaction was rejected. Please try again and confirm the transaction in MetaMask.');
+        throw new Error('Transaction was rejected. Please confirm the transaction in MetaMask.');
       } else if (error.code === 'NETWORK_ERROR') {
         throw new Error('Network connection error. Please check your internet connection and try again.');
       } else if (error.code === -32603) {
-        throw new Error('Transaction failed. Please try again with a higher gas limit or wait for network congestion to decrease.');
+        throw new Error('Transaction failed. Please try adding the property without smart contract and deploy it later.');
       }
 
       throw new Error(`Failed to deploy property contract: ${error.message}`);

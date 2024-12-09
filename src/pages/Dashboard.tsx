@@ -1,17 +1,15 @@
 import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Plus, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { web3Service } from "@/services/web3Service";
-import { Button } from "@/components/ui/button";
-import { Wallet } from "lucide-react";
-import DashboardStats from "@/components/dashboard/DashboardStats";
-import MaintenanceTrends from "@/components/dashboard/MaintenanceTrends";
-import PropertyDistribution from "@/components/dashboard/PropertyDistribution";
-import ExpenseCategories from "@/components/dashboard/ExpenseCategories";
+import DashboardGrid from "@/components/dashboard/DashboardGrid";
 import CompanyOnboarding from "@/components/onboarding/CompanyOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
+  const [showWidgetPicker, setShowWidgetPicker] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string>("");
   const { toast } = useToast();
 
@@ -55,36 +53,39 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome to your property management dashboard
-          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowWidgetPicker(prev => !prev)}
+            className="bg-white/[0.03] backdrop-blur-xl border-white/[0.05] ml-4"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Widget
+          </Button>
         </div>
-        <div>
-          {walletAddress ? (
-            <Button variant="outline" className="flex gap-2">
-              <Wallet className="h-4 w-4" />
-              {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
-            </Button>
-          ) : (
-            <Button onClick={connectWallet} className="flex gap-2">
-              <Wallet className="h-4 w-4" />
-              Connect Wallet
-            </Button>
-          )}
-        </div>
+        {walletAddress ? (
+          <Button 
+            variant="outline" 
+            className="flex gap-2 bg-white/[0.03] backdrop-blur-xl border-white/[0.05]"
+          >
+            <Wallet className="h-4 w-4" />
+            {`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`}
+          </Button>
+        ) : (
+          <Button 
+            onClick={connectWallet} 
+            className="flex gap-2 bg-white/[0.03] backdrop-blur-xl border-white/[0.05]"
+          >
+            <Wallet className="h-4 w-4" />
+            Connect Wallet
+          </Button>
+        )}
       </div>
 
-      <DashboardStats />
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <MaintenanceTrends />
-        <PropertyDistribution />
-      </div>
-
-      <ExpenseCategories />
+      <DashboardGrid />
     </div>
   );
 }
