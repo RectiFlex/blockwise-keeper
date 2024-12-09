@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { web3Service } from "@/services/web3Service";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +26,8 @@ interface CreatePropertyModalProps {
 export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalProps) {
   const [isDeploying, setIsDeploying] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [skipContract, setSkipContract] = useState(false);
+  const [deployError, setDeployError] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -47,12 +49,27 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
 
       setIsDeploying(true);
       try {
-        await web3Service.connectWallet();
-        const contractAddress = await web3Service.deployPropertyContract(
-          crypto.randomUUID(),
-          values.title,
-          values.address
-        );
+        let contractAddress = null;
+        
+        if (!skipContract) {
+          try {
+            await web3Service.connectWallet();
+            contractAddress = await web3Service.deployPropertyContract(
+              crypto.randomUUID(),
+              values.title,
+              values.address
+            );
+            setDeployError(null);
+          } catch (error: any) {
+            setDeployError(error.message);
+            toast({
+              title: "Smart Contract Deployment Failed",
+              description: error.message,
+              variant: "destructive",
+            });
+            setSkipContract(true);
+          }
+        }
 
         const { data, error } = await supabase
           .from('properties')
@@ -102,13 +119,36 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add New Property</DialogTitle>
-            <DialogDescription>
-              Enter the property details below. This will create a new smart contract.
-            </DialogDescription>
+            {!skipContract ? (
+              <>
+                <DialogDescription>
+                  Enter the property details below. This will create a new smart contract.
+                </DialogDescription>
+                {deployError && (
+                  <div className="mt-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm">
+                    {deployError}
+                  </div>
+                )}
+              </>
+            ) : (
+              <DialogDescription className="text-yellow-500">
+                Adding property without smart contract. You can deploy the contract later.
+              </DialogDescription>
+            )}
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <PropertyFormFields form={form} />
+              {!skipContract && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setSkipContract(true)}
+                >
+                  Skip Smart Contract
+                </Button>
+              )}
               <Button 
                 type="submit" 
                 className="w-full"
@@ -128,7 +168,10 @@ export function CreatePropertyModal({ open, onOpenChange }: CreatePropertyModalP
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Property Creation</AlertDialogTitle>
             <AlertDialogDescription>
-              This action will deploy a new smart contract and create a property record. Are you sure you want to continue?
+              {skipContract ? 
+                "This will add the property without blockchain verification. You can deploy the contract later." :
+                "This action will deploy a new smart contract and create a property record. Are you sure you want to continue?"
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

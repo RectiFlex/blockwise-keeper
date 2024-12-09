@@ -8,8 +8,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clipboard, Calendar, Wrench, Brain, Clock } from "lucide-react";
+import { Clipboard, Calendar, Wrench, Brain, Clock, AlertTriangle, FileText } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { WorkOrderModal } from "./WorkOrderModal";
+import { useState } from "react";
 
 type MaintenanceRequest = Database["public"]["Tables"]["maintenance_requests"]["Row"] & {
   work_orders: Database["public"]["Tables"]["work_orders"]["Row"][] | null;
@@ -35,21 +38,29 @@ export function MaintenanceRequestTable({
   isAnalyzing,
   isAnalyzingSchedule,
 }: MaintenanceRequestTableProps) {
+  const [selectedRequest, setSelectedRequest] = useState<MaintenanceRequest | null>(null);
+  const [showWorkOrderModal, setShowWorkOrderModal] = useState(false);
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'bg-green-500/10 text-green-500';
-      case 'in_progress':
-        return 'bg-blue-500/10 text-blue-500';
-      case 'cancelled':
-        return 'bg-red-500/10 text-red-500';
-      default:
-        return 'bg-yellow-500/10 text-yellow-500';
+      case 'completed': return 'bg-green-500/10 text-green-500';
+      case 'in_progress': return 'bg-blue-500/10 text-blue-500';
+      case 'cancelled': return 'bg-red-500/10 text-red-500';
+      default: return 'bg-yellow-500/10 text-yellow-500';
     }
   };
 
+  if (!requests?.length) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-muted-foreground">No maintenance requests found</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-lg border bg-card">
+    <ScrollArea className="h-[500px] rounded-lg border bg-card/50 backdrop-blur-sm">
       <Table>
         <TableHeader>
           <TableRow>
@@ -62,7 +73,7 @@ export function MaintenanceRequestTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {requests?.map((request) => (
+          {requests.map((request) => (
             <TableRow key={request.id}>
               <TableCell className="font-medium">{request.title}</TableCell>
               <TableCell>{request.properties?.title}</TableCell>
@@ -85,12 +96,27 @@ export function MaintenanceRequestTable({
                   <Button variant="ghost" size="icon">
                     <Calendar className="h-4 w-4" />
                   </Button>
-                  {!request.work_orders?.length && request.status === 'pending' && (
+                  {request.work_orders?.length ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setSelectedRequest(request);
+                        setShowWorkOrderModal(true);
+                      }}
+                      title="View Work Order"
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                  ) : request.status === 'pending' && (
                     <>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => onConvertToWorkOrder(request.id)}
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setShowWorkOrderModal(true);
+                        }}
                         disabled={isConverting}
                         title="Convert to Work Order"
                       >
@@ -122,6 +148,15 @@ export function MaintenanceRequestTable({
           ))}
         </TableBody>
       </Table>
-    </div>
+      
+      {selectedRequest && (
+        <WorkOrderModal
+          open={showWorkOrderModal}
+          onOpenChange={setShowWorkOrderModal}
+          request={selectedRequest}
+          workOrder={selectedRequest.work_orders?.[0]}
+        />
+      )}
+    </ScrollArea>
   );
 }

@@ -88,3 +88,22 @@
     hsla(217, 71%, 53%, 0.01)
   );
 }
+
+@layer utilities {
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.05] rounded-2xl shadow-xl;
+    background: linear-gradient(
+      110deg,
+      rgba(255, 255, 255, 0.03),
+      rgba(255, 255, 255, 0.01)
+    );
+  }
+
+  .card-gradient {
+    background: linear-gradient(
+      110deg,
+      hsla(217, 71%, 53%, 0.03),
+      hsla(217, 71%, 53%, 0.01)
+    );
+  }
+}
