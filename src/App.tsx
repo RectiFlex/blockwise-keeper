@@ -23,7 +23,6 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
-      suspense: false,
       refetchOnWindowFocus: false,
       staleTime: 30000, // Cache data for 30 seconds
       gcTime: 3600000, // Keep unused data in cache for 1 hour,

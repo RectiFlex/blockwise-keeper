@@ -17,7 +17,7 @@ export function MaintenanceRequestCard({ request }: MaintenanceRequestCardProps)
             <div>
               <h3 className="text-lg font-semibold">{request.title}</h3>
               <p className="text-sm text-muted-foreground">
-                {request.properties?.title}
+                {request.property?.title}
               </p>
             </div>
             <WorkOrderStatus status={request.status || 'pending'} />

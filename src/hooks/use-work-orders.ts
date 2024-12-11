@@ -48,7 +48,7 @@ export function useWorkOrders(maintenanceRequestId?: string) {
         .insert([{
           ...data,
           status: 'pending',
-          estimated_cost: data.estimated_cost ? parseFloat(data.estimated_cost as string) : null,
+          estimated_cost: typeof data.estimated_cost === 'string' ? parseFloat(data.estimated_cost) : data.estimated_cost,
         }])
         .select(`
           *,
@@ -75,7 +75,7 @@ export function useWorkOrders(maintenanceRequestId?: string) {
         .from('work_orders')
         .update({
           ...updates,
-          estimated_cost: updates.estimated_cost ? parseFloat(updates.estimated_cost as string) : null,
+          estimated_cost: typeof updates.estimated_cost === 'string' ? parseFloat(updates.estimated_cost) : updates.estimated_cost,
         })
         .eq('id', id)
         .select(`

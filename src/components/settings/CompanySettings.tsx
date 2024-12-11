@@ -47,27 +47,31 @@ export default function CompanySettings() {
   const { data: companySettings, isLoading, error } = useQuery({
     queryKey: ["companySettings"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .single();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .single();
 
-      if (!profile?.company_id) {
-        throw new Error('No company associated with user');
+        if (!profile?.company_id) {
+          throw new Error('No company associated with user');
+        }
+
+        const { data, error } = await supabase
+          .from('company_settings')
+          .select('*')
+          .eq('company_id', profile.company_id)
+          .single();
+
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        throw error;
       }
-
-      const { data, error } = await supabase
-        .from('company_settings')
-        .select('*')
-        .eq('company_id', profile.company_id)
-        .single();
-
-      if (error) throw error;
-      return data;
     },
     onError: (error: Error) => {
       toast({
@@ -75,7 +79,7 @@ export default function CompanySettings() {
         description: error.message || "Failed to load company settings",
         variant: "destructive"
       });
-    } // Added missing closing parenthesis here
+    }
   });
 
   const mutation = useMutation({

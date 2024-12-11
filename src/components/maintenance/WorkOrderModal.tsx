@@ -39,6 +39,11 @@ interface WorkOrderModalProps {
   workOrder?: any;
 }
 
+interface ContractorOption {
+  value: string;
+  label: string;
+}
+
 export function WorkOrderModal({ open, onOpenChange, request, workOrder }: WorkOrderModalProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -120,39 +125,20 @@ export function WorkOrderModal({ open, onOpenChange, request, workOrder }: WorkO
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Assign Contractor</FormLabel>
-                  <Select
+                  <Select<ContractorOption, false>
+                    value={contractors?.map(c => ({ value: c.id, label: c.name })).find(
+                      opt => opt.value === selectedContractor?.id
+                    )}
+                    onChange={(newValue) => {
+                      const contractor = contractors?.find(c => c.id === newValue?.value);
+                      setSelectedContractor(contractor || null);
+                    }}
                     options={contractors?.map(c => ({
                       value: c.id,
-                      label: c.name,
-                      contractor: c
+                      label: c.name
                     }))}
-                    value={contractors?.find(c => c.id === field.value)?.id}
-                    onChange={(option) => {
-                      field.onChange(option?.value);
-                      setSelectedContractor(option?.contractor || null);
-                    }}
-                    className="text-foreground"
-                    styles={{
-                      control: (base) => ({
-                        ...base,
-                        background: 'transparent',
-                        borderColor: 'rgba(255, 255, 255, 0.1)',
-                      }),
-                      menu: (base) => ({
-                        ...base,
-                        background: 'rgba(0, 0, 0, 0.8)',
-                        backdropFilter: 'blur(10px)',
-                      }),
-                      option: (base, state) => ({
-                        ...base,
-                        background: state.isFocused ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                        color: 'white',
-                      }),
-                      singleValue: (base) => ({
-                        ...base,
-                        color: 'white',
-                      }),
-                    }}
+                    isClearable
+                    placeholder="Select a contractor..."
                   />
                   <FormMessage />
                 </FormItem>
